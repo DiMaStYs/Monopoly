@@ -813,6 +813,7 @@ int dataProcessing(char *buffer, char *IP, Error *err, HTTP_Context *HTTP_ex){
 	int passed=0;
 	//size_t passeduns=0;
 	if(strcmp(HTTP_ex->Method, "GET\0")==0){
+		puts("Error");
 		passed= -100;
 		return passed;
 	}else if(strcmp(HTTP_ex->Method, "POST\0") == 0){
@@ -1480,6 +1481,7 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 				error_handler(buffer, "no url ", 
 						*request_return, err);
                 return response;
+		}
         }
     }else if (strcmp("POST\0", HTTP_ex.Method)==0){
 //POST
