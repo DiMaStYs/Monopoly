@@ -6,11 +6,20 @@
 #include <unistd.h>
 #include <locale.h>
 #include <math.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
+////////////////////
+#include <winsock2.h>
+#include <windows.h>
+#include <ws2tcpip.h>
+#pragma comment(lib, "ws2_32.lib")
+
+////////////////////
+//#include <arpa/inet.h>
 
 #define strsize(args...) snprintf(NULL, 0, args) + sizeof('\0')
+
+
 #define PORT 8000
+
 #define MAX_REQUEST 8
 #define MAX_USERS 100
 #define MAX_HTML_COUNTER 10
@@ -95,33 +104,74 @@ size_t num_users = 0;
 size_t num_rooms = 0;
 //new
 //////////////////////////////////////////////
-int insert_string(char * file_string, char * search_string,
-	   	char * inserting_string, char * result, size_t result_size){
+int insert_string(char * file_string, char * search_string, char * inserting_string, char * result, size_t result_size){
+	size_t len_search = strlen(search_string);
+    size_t len_insert = strlen(inserting_string);
+    size_t len_file   = strlen(file_string);
+    size_t len_result = len_file - len_search + len_insert+1;
+	if(result_size<len_result){
+        return -1;
+    }
+	if(len_search==0){
+        strcpy(result ,file_string);
+        return -2;
+	}
 	char * c_file = strstr(file_string, search_string);
+
 	if(c_file!=NULL){
-        size_t len_search = strlen(search_string);
-        size_t len_insert = strlen(inserting_string);
-        size_t len_file   = strlen(file_string);
-        size_t len_result = len_file - len_search + len_insert+1;
-        if(result_size<len_result){
-            return -2;
-        }
-        if(strncpy(result, file_string, c_file-file_string)==NULL){
-            printf("Error strcpy");
-            return -3;
-        }
-        if(len_insert != 0){
-            if(strcat(result, inserting_string)==NULL){
-                printf("Error strcpy");
-                return -5;
+        if(len_insert!=0){
+            if((c_file-file_string!=0)){
+                if (*(c_file+strlen(search_string))!='\0'){
+                    if(strncpy(result, file_string, c_file-file_string)==NULL){
+                        printf("Error strcpy");
+                        return -3;
+                    }
+                    result[c_file-file_string]='\0';
+                    if(strcat(result, inserting_string)==NULL){
+                        printf("Error strcpy");
+                        return -4;
+                    }
+                    if(strcat(result,c_file+len_search)==NULL){
+                        printf("Error strcat");
+                        return -5;
+                    }
+                    return 0;
+                }else{
+                    if(strncpy(result, file_string, c_file-file_string)==NULL){
+                        printf("Error strcpy");
+                        return -3;
+                    }
+                    result[c_file-file_string]='\0';
+                    if(strcat(result, inserting_string)==NULL){
+                        printf("Error strcpy");
+                        return -4;
+                    }
+                    return 0;
+                }
+            }else{
+                if(strcpy(result, inserting_string)==NULL){
+                    printf("Error strcpy");
+                    return -4;
+                }
+                if(strcat(result,c_file+len_search)==NULL){
+                    printf("Error strcat");
+                    return -5;
+                }
+                return 0;
             }
+        }else{
+            if(strcpy(result, file_string)==NULL){
+                printf("Error strcpy");
+                return -6;
+            }
+            return 1;
         }
-        if(strcat(result,c_file+len_search)==NULL){
-            return -4;
-        }
-        return 0;
 	}else{
-		return -1;
+	    if(strcpy(result, file_string)==NULL){
+            printf("Error strcpy");
+            return -6;
+        }
+		return -7;
 	}
 }
 
@@ -487,6 +537,37 @@ int name_for_login(char *name, size_t *id_login){
 	return 0;
 }
 
+int name_for_room(char *name, size_t *id_room){
+    if(num_rooms==0){
+        return -1;
+    }
+
+    size_t low=0;
+    size_t high=num_rooms-1;
+    size_t mid=0;
+    int cmp=0;
+
+    while(low<=high){
+        mid = low +(high-low)/2;
+        cmp = strcmp(rooms[mid].name_room,name);
+        if(cmp == 0){
+            *id_room=mid;
+            return 0;
+        }else if(cmp<0){
+            low = mid+1;
+        }else{
+            if(high == 0){
+                return -1;
+            }else{
+                high = mid-1;
+            }
+        }
+    }
+    if(cmp!=0){
+        return -3;
+    }
+}
+
 void html_way_create(void){
 	for(unsigned short int i = 0;i < MAX_HTML_COUNTER; i++){
 		strcat(htmls[i].name_url_html, "D:\\p\\a\\htmls\\");
@@ -761,15 +842,277 @@ char * error_send(void){
 				"<html><body><h1>Not found</h1></body></html>");
 	return response;
 }
+//new
+int dataProcessing(char *buffer, char *IP, Error *err,HTTP_Context *HTTP_ex){
+    if(strcmp("/\0", HTTP_ex->URL)==0){
+        int index_user;
+        char buffer_login[MAX_LENGTH];
+        char buffer_password[MAX_LENGTH];
+        if(insert_field(buffer, "login=", buffer_login)==0){
+            if(insert_field(buffer, "password=", buffer_password)==0){
+                index_user=binary_search(buffer_login);
+                if(strcmp(users[index_user].password,buffer_password)==0){
+                    return 0;
+                }else{
+                    puts("Not found password or login");
+                    return -1;
+                }
+            }else{
+                puts("Not see password");
+                return -1;
+            }
+        }else{
+            puts("Not see login");
+            return -1;
+        }
+    }else if(strcmp("/registration\0", HTTP_ex->URL)==0){
+        char login[MAX_LENGTH];
+        char name[MAX_LENGTH];
+        char password[MAX_LENGTH];
+        if(((insert_field(buffer, "login=", login))!=0)||
+            ((insert_field(buffer, "name=", name))!=0)||
+            (insert_field(buffer, "password=", password)!=0)){
+            return -2;
+        }
+        if(insert_account(login, name, password, IP)==0){
+            return 0;
+        }else{
+            return -2;
+        }
+    }else if(strncmp("/rooms/",HTTP_ex->URL,7)==0){
+        char *index_symbol = HTTP_ex->URL;
+        size_t num_room;
+        index_symbol+=7;//index in name room
+        char name_room [MAX_LENGTH];
+        size_t index_name_room = 0;
+        while((*index_symbol!='\0')&&(*index_symbol!='/')){
+            name_room[index_name_room] = *index_symbol;
+            index_name_room+=1;
+            index_symbol+=1;
+        }
+        if(*index_symbol!='\0'){
+            index_symbol+=1;
+        }
+        name_room[index_name_room] = '\0';
+        if(num_rooms==0){
+            printf("%s not name room\n", name_room);
+            return -3;
+        }
+
+
+        size_t index_user;
+
+        if(IP_for_login(IP, &index_user)!=0){
+            return -1;
+        }
+        connect_room(users[index_user].name, num_room);
+//index_user, num_room, name_room
+///////////////////////////////////////////////////////////////////////////////////////
+        if(*index_symbol=='\0'){
+    // /rooms/&
+            char name_user[MAX_LENGTH];
+            size_t index_user2;
+            char money[15];
+            size_t chang_balance;
+            char bank[10];
+            char *c;
+            if(insert_head(buffer, "money", money)==0){
+                chang_balance = strtoumax(money, &c, 10);
+                if(insert_head(buffer, "name_select=", name_user)==0){
+                    if(	users[index_user].balance[num_room]>=chang_balance){
+                        if(name_for_login(name_user, &index_user2)==0){
+                            users[index_user].balance[num_room] -=chang_balance;
+                            users[index_user2].balance[num_room] +=chang_balance;
+                            response = malloc(strsize("HTTP/1.1 303 See Other\n"
+                                    "Content-Type: text/html; charset=utf-8\n"
+                                    "Location: /rooms/%s\n\n",name_room));
+                            if(response == NULL){
+                                *request_return = -1;
+                                return NULL;
+                            }
+                            sprintf(response,"HTTP/1.1 303 See Other\n"
+                                    "Content-Type: text/html; charset=utf-8\n"
+                                    "Location: /rooms/%s\n\n",name_room);
+                        }else{
+                            response=error_send();
+                            if(response == NULL){
+                                *request_return = -10;
+                                return NULL;
+                            }
+                            *request_return = -1;
+                            error_handler(buffer,
+                                    "not search select name /rooms/&/",
+                                    *request_return, err);
+                            return response;
+
+                        }
+                    }else{
+                            response=error_send();
+                            if(response == NULL){
+                                *request_return = -10;
+                                return NULL;
+                            }
+                            *request_return = -1;
+                            error_handler(buffer,
+                                    "balance so small /rooms/&/",
+                                    *request_return, err);
+                            return response;
+
+                    }
+                }if(insert_head(buffer, "bank=", bank)==0){
+                        if(strcmp(bank, "GIV")==0){
+                            money_transfer_bank(users[index_user].name,
+                                num_room, chang_balance);
+                            response = malloc(strsize("HTTP/1.1 303 See Other\n"
+                                    "Content-Type: text/html; charset=utf-8\n"
+                                    "Location: /rooms/%s\n\n",name_room));
+                            if(response == NULL){
+                                *request_return = -1;
+                                return NULL;
+                            }
+                            sprintf(response,"HTTP/1.1 303 See Other\n"
+                                    "Content-Type: text/html; charset=utf-8\n"
+                                    "Location: /rooms/%s\n\n",name_room);
+                        }else if(strcmp(bank, "PUSH")==0){
+                            if(	users[index_user].balance[num_room]>=chang_balance){
+                                users[index_user].balance[num_room] -=chang_balance;
+                                response = malloc(strsize("HTTP/1.1 303 See Other\n"
+                                        "Content-Type: text/html; charset=utf-8\n"
+                                        "Location: /rooms/%s\n\n",name_room));
+                                if(response == NULL){
+                                    *request_return = -1;
+                                    return NULL;
+                                }
+                                sprintf(response,"HTTP/1.1 303 See Other\n"
+                                        "Content-Type: text/html; charset=utf-8\n"
+                                        "Location: /rooms/%s\n\n",name_room);
+                            }else{
+                                response = malloc(strsize("HTTP/1.1 303 See Other\n"
+                                        "Content-Type: text/html; charset=utf-8\n"
+                                        "Location: /rooms/%s\n\n",name_room));
+                                if(response == NULL){
+                                    *request_return = -1;
+                                    return NULL;
+                                }
+                                sprintf(response,"HTTP/1.1 303 See Other\n"
+                                        "Content-Type: text/html; charset=utf-8\n"
+                                        "Location: /rooms/%s\n\n",name_room);
+                            }
+
+
+
+                        }else{
+                            response = error_send();
+                            if(response == NULL){
+                                *request_return = -10;
+                                return NULL;
+                            }
+                            *request_return = -1;
+                            error_handler(buffer, "bank !?!? /rooms/&",
+                                        *request_return, err);
+                            return response;
+                        }
+                }else{
+                    response = malloc(strsize("HTTP/1.1 303 See Other\n"
+                            "Content-Type: text/html; charset=utf-8\n"
+                            "Location: /rooms/%s\n\n",name_room));
+                    if(response == NULL){
+                        *request_return = -1;
+                        return NULL;
+                    }
+                    sprintf(response,"HTTP/1.1 303 See Other\n"
+                            "Content-Type: text/html; charset=utf-8\n"
+                            "Location: /rooms/%s\n\n",name_room);
+                }
+            }else{
+                response = malloc(strsize("HTTP/1.1 303 See Other\n"
+                        "Content-Type: text/html; charset=utf-8\n"
+                        "Location: /rooms/%s\n\n",name_room));
+                if(response == NULL){
+                    *request_return = -1;
+                    return NULL;
+                }
+                sprintf(response,"HTTP/1.1 303 See Other\n"
+                        "Content-Type: text/html; charset=utf-8\n"
+                        "Location: /rooms/%s\n\n",name_room);
+            }
+        }else if(strcmp(index_symbol,"conformation_bank\0")==0){
+    // /rooms/&/conformation_bank
+            response = error_send();
+            if(response == NULL){
+                *request_return = -10;
+                return NULL;
+            }
+            *request_return = -1;
+            error_handler(buffer, "not_create /rooms/&/conformation_bank",
+                    *request_return, err);
+            return response;
+        }else{
+            response = error_send();
+            if(response == NULL){
+                *request_return = -10;
+                return NULL;
+            }
+            *request_return = -1;
+            error_handler(buffer, "no url ",
+                    *request_return, err);
+            return response;
+        }
+    }else if(strcmp("/create_room\0",HTTP_ex.URL)==0){
+        puts("You POST /create_room");
+        char name_room[MAX_LENGTH];
+        if(insert_field(buffer, "name=",name_room)!=0){
+            response = error_send();
+            if(response == NULL){
+                *request_return = -10;
+                return NULL;
+            }
+            error_handler(buffer, "insert_field /create_room",
+                    *request_return,err);
+            return response;
+        }
+        printf("Name_room =%s\n", name_room);
+        if(create_room(name_room)!=0){
+            response = error_send();
+            if(response == NULL){
+                *request_return = -10;
+                return NULL;
+            }
+            error_handler(buffer, "create_room /create_room",
+                   *request_return,err);
+            return response;
+        }
+        response = malloc(strsize("HTTP/1.1 303 See Other\n"
+                "Content-Type: text/html; charset=utf-8\n"
+                "Location: /rooms/%s\n\n",name_room));
+        if(response == NULL){
+            *request_return = -1;
+            return NULL;
+        }
+        sprintf(response,"HTTP/1.1 303 See Other\n"
+                "Content-Type: text/html; charset=utf-8\n"
+                "Location: /rooms/%s\n\n",name_room);
+
+    }else{
+        response = error_send();
+        if(response == NULL){
+            *request_return = -10;
+            return NULL;
+        }
+        *request_return = -1;
+        error_handler(buffer, "what_url?? ?????????",
+                *request_return, err);
+        return response;
+    }
+
+}
 
 char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 	char *response;//
-
 	HTTP_Context HTTP_ex;
 	create_http_struct(buffer, &HTTP_ex);
 //CHECK HTTP PROTOCOL
 	if (strcmp(HTTP_ex.Protocol,"HTTP/1.1")!=0){
-
 		response = error_send();
 		if(response == NULL){
 			*request_return = -10;
@@ -793,12 +1136,9 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 	}
 	fprintf(html_file,"%s\n\n",buffer);
     fclose(html_file);
-
 //CREATE ANSWER
-
 	if (strcmp(HTTP_ex.Method,"GET\0")==0){
 	//GET:
-
 		if(strcmp("/\0", HTTP_ex.URL)==0){
         // /
             size_t buffer_size = correct_size(htmls[0].name_url_html)+1;
@@ -1578,7 +1918,6 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
                 return response;
 			}
 		}else if(strcmp("/create_room\0",HTTP_ex.URL)==0){
-			puts("You POST /create_room");
 			char name_room[MAX_LENGTH];
 			if(insert_field(buffer, "name=",name_room)!=0){
 				response = error_send();
@@ -1590,7 +1929,7 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 					   	*request_return,err);
 				return response;
 			}
-			printf("Name_room =%s\n", name_room);
+
 			if(create_room(name_room)!=0){
 				response = error_send();
 				if(response == NULL){
@@ -1679,36 +2018,107 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
         free(response);
         response = NULL;
         response = malloc(strsize("HTTP/1.1 303 See Other\r\n"
-                "Content-Type: text/html; charset=utf-8\n"///////////password bad = OK
+                "Content-Type: text/html; charset=utf-8\n"
                 "Location: /\n\n"));
         if(response == NULL){
             *request_return = -1;
             return NULL;
         }
         strcpy(response, "HTTP/1.1 303 See Other\r\n"
-                "Content-Type: text/html; charset=utf-8\n"////////////////password bad = OK
+                "Content-Type: text/html; charset=utf-8\n"
                 "Location: /\n\n");
         *request_return = 0;
         return response;
 	}
-	puts("ALL OK");
+
 	*request_return = 0;
 	return response;
 }
 
 int main(void){
-	
-	if(passed!=0){
-		response = error_send();
-		if(response == NULL){
-			*request_return = -10;
-			return NULL;
-		}
-		*request_return = -3;
-		sprintf(explanation, "send_html = %d", passed);
-		error_handler(buffer, explanation, 
-				*request_return, err);
-		return response;
+	html_way_create();
+	setlocale(LC_ALL, "");
+	//////////////////////////////////////////
+	WSADATA wsa;
+	SOCKET socket_server, socket_client;
+	struct sockaddr_in server , client;
+	int c;
+	char *message;
+
+	//Initializating Winsock
+	if (WSAStartup(MAKEWORD(2,2),&wsa) != 0)
+	{
+		printf("Failed. Error Code : %d",WSAGetLastError());
+		return 1;
 	}
+
+	//Create a socket
+	if((socket_server = socket(AF_INET , SOCK_STREAM , 0 )) == INVALID_SOCKET)
+	{
+		printf("Could not create socket : %d" , WSAGetLastError());
+	}
+
+
+	//Prepare the sockaddr_in structure
+	server.sin_family = AF_INET;
+	server.sin_addr.s_addr = INADDR_ANY;
+	server.sin_port = htons(PORT);
+
+	//Bind
+	if( bind(socket_server ,(struct sockaddr *)&server , sizeof(server)) == SOCKET_ERROR)
+	{
+		printf("Bind failed with error code : %d" , WSAGetLastError());
+	}
+	listen(socket_server , 3);
+	strcpy(users[0].login, "admin");
+	strcpy(users[0].name, "admin");
+	strcpy(users[0].password, "HvX0357\%");
+	for(size_t i=0; i<MAX_ROOMS;i++){
+		users[0].balance[i]=0;
+	}
+	strcpy(names[0].name, "admin");
+	strcpy(names[0].login, "login");
+	strcpy(IPs[0].login, "login");
+	strcpy(IPs[0].IP, "192.168.2.160");
+	num_users+=1;
+	char *IP_main;
+	char buffer[3024];
+	int result_handle=0;
+	Error err;
+    c = sizeof(struct sockaddr_in);
+    size_t size_buffer;
+    while(result_handle != -10){
+        socket_client = accept(socket_server, (struct sockaddr *)&client, &c);
+        if (socket_client == INVALID_SOCKET){
+            puts("Error accept");
+            printf("accept failed with error code : %d" , WSAGetLastError());
+        }
+        size_buffer = recv(socket_client, buffer, sizeof(buffer), 0);
+
+        buffer[size_buffer]='\0';
+        IP_main = inet_ntoa(client.sin_addr);
+
+        printf("Buffer klient :\n%s\n", buffer);
+        puts("HI");
+        message = handle_request(buffer, IP_main, &result_handle, &err);
+        if(message!=NULL){
+            printf("%s", message);
+            send(socket_client , message , strlen(message) , 0);
+            free(message);
+        }else{
+
+            result_handle = -10;
+        }
+    }
+    closesocket(socket_client);
+    closesocket(socket_server);
+	WSACleanup();
+    puts("ERROR");
+	printf("Explanation = %s\nIn file err = %s\nResult = %d",
+		err.function, err.a?"YES":"NO",err.result);
+
+
+
+    //////////////////////////////////////////
 	return 0;
 }
