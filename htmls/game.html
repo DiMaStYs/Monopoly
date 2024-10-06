@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Форма для перевода</title>
+</head>
+<body>
+    <h1>Переводы</h1>
+	<h2>Твоя сумма: <!--INSERT_MONEY_USER--></h2>
+    <form method="post">
+        <label for="name_select">Кому перевести:</label>
+		
+		    <select id="name_select" name="name_select">
+				 <!-- INSERT_USERS -->
+		    </select>
+		    <br><br>
+		    <label for="money">Сумма для передачи:</label>
+		    <input type="money" id="money" name="number">
+		    <input type="submit" value="Перевести">
+    </form>
+</body>
+</html>
+
