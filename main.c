@@ -810,6 +810,7 @@ char * error_send(void){
 }
 
 int dataProcessing(char *buffer, char *IP, Error *err, HTTP_Context *HTTP_ex){
+	//hasdf
 	int passed=0;
 	//size_t passeduns=0;
 	if(strcmp(HTTP_ex->Method, "GET\0")==0){
