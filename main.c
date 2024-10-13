@@ -19,7 +19,7 @@
 #define MAX_USERS_IN_ROOM 8
 
 typedef struct{
-	//Start string
+    //Start string
 	char Method[MAX_LENGTH];
 	char URL[MAX_LENGTH];
 	char Protocol[MAX_LENGTH];
@@ -1423,7 +1423,9 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 				}
 				sprintf(response,"HTTP/1.1 200 OK\n"
 							"Content-Type:text/html;charset=utf-8\n%s",buffer_result);
-			}else if(strcmp(index_symbol,""	
+			}else if(strcmp(index_symbol,"")==0){
+                return 0;
+
 			}else{
 		// /rooms/&/!?!?
                 response = error_send();
@@ -1473,16 +1475,16 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 						buffer_file);
 			}
 		}else{
-                response = error_send();
-				if(response == NULL){
-					*request_return = -10;
-					return NULL;
-				}
-				*request_return = -1;
-				error_handler(buffer, "no url ", 
-						*request_return, err);
-                return response;
-		}
+            response = error_send();
+		    if(response == NULL){
+				*request_return = -10;
+				return NULL;
+			}
+			*request_return = -1;
+			error_handler(buffer, "no url ", 
+					*request_return, err);
+             return response;
+		
         }
     }else if (strcmp("POST\0", HTTP_ex.Method)==0){
 //POST
