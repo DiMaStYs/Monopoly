@@ -950,8 +950,8 @@ int dataProcessing(char *buffer, char *IP, Error *err, HTTP_Context *HTTP_ex){
 
 char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 	char *response; //result
-	int passed=0;
-	size_t passeduns=0;	
+	int passed=0;//return function(int)
+	size_t passeduns=0;//return function(unsigned)	
 	HTTP_Context HTTP_ex;
 	create_http_struct(buffer, &HTTP_ex);
 //CHECK HTTP PROTOCOL
@@ -980,7 +980,7 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 	fprintf(html_file,"%s\n",buffer);
     fclose(html_file);
 //CREATE ANSWER
-	char explanation[100];
+	char explanation[100];//correct problem 
 	if (strcmp(HTTP_ex.Method,"GET\0")==0){
 	//GET:	
 		if(strcmp("/\0", HTTP_ex.URL)==0){
@@ -1077,7 +1077,7 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 					   	*request_return, err);
                 return response;
 			}
-            buffer_file[buffer_size-1] = '\0';
+            buffer_file[buffer_size] = '\0';
 			response=malloc(strsize("HTTP/1.1 200 OK\n"
 					"Content-Type: text/html; charset=utf-8\n\n%s", buffer_file));
 			sprintf(response, "HTTP/1.1 200 OK\n"
@@ -1123,6 +1123,7 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
                 buffer_room[len]='\n';
                 strcat(buffer_rooms, buffer_room);
             }
+            
 			char buffer_all[strlen(buffer_rooms)+strlen(buffer_file)+1];
 			passed = insert_string(buffer_file,"<-- INSERT_ROOMS -->",buffer_rooms,
 				   	buffer_all, sizeof(buffer_all));
