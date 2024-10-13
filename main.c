@@ -1124,8 +1124,23 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
                 strcat(buffer_rooms, buffer_room);
             }
             
-			char buffer_all[strlen(buffer_rooms)+strlen(buffer_file)+1];
+            size_t id_user = IP_for_login(IP);
+			char buffer_all[strlen(buffer_rooms)+strlen(buffer_file)+1+strlen(users[id_user].name)];
 			passed = insert_string(buffer_file,"<-- INSERT_ROOMS -->",buffer_rooms,
+				   	buffer_all, sizeof(buffer_all));
+			if(passed<0){
+                response = error_send();
+				if(response == NULL){
+					*request_return = -10;
+					return NULL;
+				}
+				*request_return = -3;
+				sprintf(explanation, "insert_string=%d", passed);
+				error_handler(buffer, explanation, 
+						*request_return, err);
+                return response;
+			}
+			passed = insert_string(buffer_all, "<!-- INSERT_THIS_USER -->",buffer_rooms,
 				   	buffer_all, sizeof(buffer_all));
 			if(passed<0){
                 response = error_send();
