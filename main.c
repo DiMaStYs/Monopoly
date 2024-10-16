@@ -15,6 +15,7 @@
 #define MAX_USERS 100
 #define MAX_HTML_COUNTER 10
 #define MAX_LENGTH 50
+#define MAX_LENGTH_PWD 200
 #define MAX_ROOMS 8
 #define MAX_USERS_IN_ROOM 8
 
@@ -97,6 +98,8 @@ User		users[MAX_USERS];
 Room		rooms[MAX_ROOMS];
 IP			IPs[MAX_USERS];
 Name		names[MAX_USERS];
+char        now_pwd_dirrectory[MAX_LENGTH_PWD];
+
 
 size_t num_users = 0;
 size_t num_rooms = 0;
@@ -467,6 +470,9 @@ int insert_field(char * buffer_all, char * search_field, char * buffer_out){
 
 int IP_for_login(char * user_IP, size_t *id_login){
 	//binary_search
+    if(num_users==0){
+        return 0;
+    }
 	size_t low=0;
 	size_t mid=low;
 	size_t high=num_users - 1;
@@ -532,18 +538,21 @@ int name_for_login(char *name, size_t *id_login){
 }
 
 void html_way_create(void){
-	for(unsigned short int i = 0;i < MAX_HTML_COUNTER; i++){
-		strcat(htmls[i].name_url_html, "/home/dmitriy/Progect/htmls/");
+	char path[256];
+    getcwd(path,256);
+    strcat(path, "/htmls/");    
+    for(unsigned short int i = 0;i < MAX_HTML_COUNTER; i++){
+		strcat(htmls[i].name_url_html, path); 
 	}
 	strcat(htmls[0].name_url_html, "login.html\0");
 	strcat(htmls[1].name_url_html, "registration.html\0");
 	strcat(htmls[2].name_url_html, "rooms.html\0");
-	strcat(htmls[3].name_url_html, "game.html\0");
-	strcat(htmls[4].name_url_html, "base.html\0");
-	strcat(htmls[5].name_url_html, "create_room.html\0");
-	strcat(htmls[6].name_url_html, "confirmation.html\0");
-	strcat(htmls[7].name_url_html, "confirmation_bank.html\0");
-	strcat(htmls[8].name_url_html, "history.html\0");
+	strcat(htmls[3].name_url_html, "create_room.html\0");
+	strcat(htmls[4].name_url_html, "game.html\0");
+//	strcat(htmls[4].name_url_html, "base.html\0");
+	strcat(htmls[5].name_url_html, "confirmation.html\0");
+	strcat(htmls[6].name_url_html, "confirmation_bank.html\0");
+	strcat(htmls[7].name_url_html, "history.html\0");
 	
 }
 
@@ -648,7 +657,11 @@ int create_http_struct(char *buffer, HTTP_Context * indicator_http){
 }
 
 int error_handler(char * buffer, char * explanation, int error, Error * err){
-	FILE *html_file = fopen("/home/dmitriy/Progect/error_buffer.txt","a");
+	char path[256];
+    getcwd(path,256);
+    strcat(path,"/error_buffer.txt");
+
+	FILE *html_file = fopen(path,"a");
 	if(html_file!=NULL){
 		fprintf(html_file,"%s\nExplanation = %s\nError number = %d\n",buffer, explanation, error);
 		fclose(html_file);
@@ -657,15 +670,6 @@ int error_handler(char * buffer, char * explanation, int error, Error * err){
 		err->result=error;
 		return 0;
 	}else{
-		html_file = fopen("/home/dmitriy/Progect/error_buffer1.txt","a");
-		if(html_file!=NULL){
-			fprintf(html_file,"%s\nExplanation = %s\nError number = %d\n",buffer, explanation, error);
-			fclose(html_file);
-			err->a=true;
-			strcpy(err->function,explanation);
-			err->result=error;
-			return 1;
-		}
 		return -1;
 	}
 }
@@ -966,7 +970,9 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
         return response; 
     }
 //INSERT IN BUFFER.txt
-	FILE *html_file = fopen("/home/dmitriy/Progect/buffer.txt","a");
+	char pwd_request[MAX_LENGTH_PWD];
+    sprintf(pwd_request,"%s/%s",now_pwd_dirrectory,"buffer.txt");
+    FILE *html_file = fopen(pwd_request,"a");
 	if(html_file==NULL){
 		response = error_send();
 		if(response == NULL){
@@ -983,7 +989,7 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 	char explanation[100];//correct problem 
 	if (strcmp(HTTP_ex.Method,"GET\0")==0){
 	//GET:	
-		if(strcmp("/\0", HTTP_ex.URL)==0){
+		if((strcmp("/\0", HTTP_ex.URL)==0)||(strcmp("/login\0", HTTP_ex.URL)==0)){
         // / 
             size_t buffer_size = correct_size(htmls[0].name_url_html);
             if (buffer_size == 0){
@@ -1123,8 +1129,20 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
                 buffer_room[len]='\n';
                 strcat(buffer_rooms, buffer_room);
             }
-            
-            size_t id_user = IP_for_login(IP);
+            size_t id_user;
+            passed=IP_for_login(IP, &id_user);
+            if(passed<0){
+                response = error_send();
+				if(response == NULL){
+					*request_return = -10;
+					return NULL;
+				}
+				*request_return = -3;
+				sprintf(explanation, "IP_for_login=%d", passed);
+				error_handler(buffer, explanation, 
+						*request_return, err);
+                return response;
+            }
 			char buffer_all[strlen(buffer_rooms)+strlen(buffer_file)+1+strlen(users[id_user].name)];
 			passed = insert_string(buffer_file,"<-- INSERT_ROOMS -->",buffer_rooms,
 				   	buffer_all, sizeof(buffer_all));
@@ -1508,8 +1526,10 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 			int index_user;
 			char buffer_login[MAX_LENGTH];
 			char buffer_password[MAX_LENGTH];
-			if(insert_field(buffer, "login=", buffer_login)==0){
-				if(insert_field(buffer, "password=", buffer_password)==0){
+			passed=insert_field(buffer, "login=", buffer_login);
+            if(passed==0){
+                passed=insert_field(buffer, "password=", buffer_password);
+				if(passed==0){
 					index_user=binary_search(buffer_login);
 					if(strcmp(users[index_user].password,buffer_password)==0){
 						response = malloc(strsize("HTTP/1.1 303 See Other\n"
@@ -1559,40 +1579,38 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 						"Location: /\n\n");
 			}
 		}else if(strcmp("/registration\0", HTTP_ex.URL)==0){
-			puts("/registration");
 			char login[MAX_LENGTH];
 			char name[MAX_LENGTH];
 			char password[MAX_LENGTH];
 			if(((insert_field(buffer, "login=", login))!=0)||
-				((insert_field(buffer, "name=", name))!=0)||
+				((insert_field(buffer, "username=", name))!=0)||
 				(insert_field(buffer, "password=", password)!=0)){
-				
-						
-				response = error_send();
+				response = malloc(strsize("HTTP/1.1 303 See Other\n"
+						"Content-Type: text/html; charset=utf-8\n"
+						"Location: /registration\n\n"));
 				if(response == NULL){
-					*request_return = -10;
+					*request_return = -1;
 					return NULL;
 				}
-				*request_return = -1;
+				strcpy(response,"HTTP/1.1 303 See Other\n"
+						"Content-Type: text/html; charset=utf-8\n"
+						"Location: /registration\n\n");
 				error_handler(buffer, "insert_field /registration", 
 						*request_return, err);
                 return response;
 			}
-			printf("%s\n%s\n%s\n%s\n", login, name, password, IP);
 			if(insert_account(login, name, password, IP)==0){
-				puts("1");
 				response = malloc(strsize("HTTP/1.1 303 See Other\n"
 					"Content-Type: text/html; charset=utf-8\n"
-					"Location: /\n\n"));
+					"Location: /rooms\n\n"));
 				if(response == NULL){
 					*request_return =-1;
 					return NULL;
 				}
 			   	strcpy(response,"HTTP/1.1 303 See Other\n"
 					"Content-Type: text/html; charset=utf-8\n"
-					"Location: /\n\n");
+					"Location: /rooms\n\n");
 			}else{
-				puts("4");
 				response = malloc(strsize("HTTP/1.1 303 See Other\n"
 						"Content-Type: text/html; charset=utf-8\n"
 						"Location: /registration\n\n"));
@@ -1604,7 +1622,6 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 						"Content-Type: text/html; charset=utf-8\n"
 						"Location: /registration\n\n");
 			}
-			puts("5");
 		}else if(strcmp("/rooms\0", HTTP_ex.URL)==0){
 			char name_room[MAX_LENGTH];
 			if(insert_field(buffer, "room=", name_room)==0){
@@ -1955,7 +1972,8 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 }
 
 int main(void){
-	html_way_create();
+	getcwd(now_pwd_dirrectory, MAX_LENGTH_PWD);
+    html_way_create();
 	setlocale(LC_ALL, "");
 	int server_socket, client_socket;
 	struct sockaddr_in server_addr, client_addr;
@@ -2001,10 +2019,12 @@ int main(void){
 			return 1;
 		}
 		read(client_socket, buffer, sizeof(buffer));
-		strcpy(IP_main ,inet_ntoa(client_addr.sin_addr));
+		buffer[strlen(buffer)]='\0';
+        strcpy(IP_main ,inet_ntoa(client_addr.sin_addr));
 	///////////////////////////////////////////////////////////////////////////////////
 		exit_handler = handle_request(buffer, IP_main, &result_handle, &err);
-		if(exit_handler == NULL){
+		printf("Exit buffer = /n%s/n", exit_handler);
+        if(exit_handler == NULL){
 	///////////////////////////////////////////////////////////////////////////////////
 			result_handle =-10;
 		}else{
