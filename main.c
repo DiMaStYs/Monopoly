@@ -111,7 +111,7 @@ int insert_string(char * file_string, char * search_string, char * inserting_str
 	size_t len_file   = strlen(file_string);
 	size_t len_result = len_file - len_search + len_insert+1;
 	if(result_size<len_result){
-        printf("%ull < %ull\n", result_size, len_result);
+        printf("\n%llu < %llu\n", result_size, len_result);
 		return -1;
 	}
 	if(len_search==0){
@@ -802,13 +802,13 @@ int connect_room(char *name, size_t room){
 char * error_send(void){
 	char *response;
 	response = malloc(strsize("HTTP/1.1 404 OK\n"
-				"Content-Type:text/html;charset=utf-8\n%s",
+				"Content-Type:text/html;charset=utf-8\n\n%s",
 				"<html><body><h1>Not found</h1></body></html>"));
 	if(response == NULL){
 		return NULL;
 	}
 	sprintf(response, "HTTP/1.1 404 OK\n"
-				"Content-Type:text/html;charset=utf-8\n%s",
+				"Content-Type:text/html;charset=utf-8\n\n%s",
 				"<html><body><h1>Not found</h1></body></html>");
 	return response;
 }
@@ -1119,8 +1119,8 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
                 return response;
 			}
 			size_t len;
-			char buffer_room[(MAX_LENGTH+31)];
-            char buffer_rooms[(MAX_LENGTH+31)*num_rooms];
+			char buffer_room[(MAX_LENGTH+MAX_LENGTH+31)];
+            char buffer_rooms[sizeof(buffer_room)*num_rooms];
 			strcpy(buffer_rooms, "");            
             for(size_t i=0;i<num_rooms;i++){
                 len  = sprintf(buffer_room,
@@ -1128,6 +1128,7 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 						rooms[i].name_room,
 						rooms[i].name_room);
                 buffer_room[len]='\n';
+                buffer_room[len+1]='\0';
                 strcat(buffer_rooms, buffer_room);
             }
             size_t id_user;
@@ -1144,9 +1145,10 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 						*request_return, err);
                 return response;
             }
-			char buffer_all[strlen(buffer_file)-strlen("<!-- INSERT_ROOMS -->")+
+			char buffer_all[strlen(buffer_file)-
                 strlen(buffer_rooms)+1+
-                strlen(users[id_user].name)];
+                strlen(users[id_user].name)-
+                strlen("<!-- INSERT_ROOMS -->\0")];
 			passed = insert_string(buffer_file,"<!-- INSERT_ROOMS -->",buffer_rooms,
 				   	buffer_all, sizeof(buffer_all));
 			if(passed<0){
