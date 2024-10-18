@@ -7,11 +7,6 @@
 #include <locale.h>
 #include <math.h>
 ////////////////////
-<<<<<<< HEAD
-=======
-#pragma comment(lib, "ws2_32.lib")
-
->>>>>>> b84b6a48d7db23e7a45e6614e662546e1a830562
 ////////////////////
 #include <arpa/inet.h>
 
@@ -1126,7 +1121,7 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 			size_t len;
 			char buffer_room[(MAX_LENGTH+MAX_LENGTH+31)];
             char buffer_rooms[sizeof(buffer_room)*num_rooms];
-			strcpy(buffer_rooms, "");            
+			strcpy(buffer_rooms, "");
             for(size_t i=0;i<num_rooms;i++){
                 len  = sprintf(buffer_room,
 					   	"<option value=\"%s\">%s</option>",
