@@ -7,6 +7,11 @@
 #include <locale.h>
 #include <math.h>
 ////////////////////
+<<<<<<< HEAD
+=======
+#pragma comment(lib, "ws2_32.lib")
+
+>>>>>>> b84b6a48d7db23e7a45e6614e662546e1a830562
 ////////////////////
 #include <arpa/inet.h>
 
@@ -803,13 +808,13 @@ int connect_room(char *name, size_t room){
 char * error_send(void){
 	char *response;
 	response = malloc(strsize("HTTP/1.1 404 OK\n"
-				"Content-Type:text/html;charset=utf-8\n%s",
+				"Content-Type:text/html;charset=utf-8\n\n%s",
 				"<html><body><h1>Not found</h1></body></html>"));
 	if(response == NULL){
 		return NULL;
 	}
 	sprintf(response, "HTTP/1.1 404 OK\n"
-				"Content-Type:text/html;charset=utf-8\n%s",
+				"Content-Type:text/html;charset=utf-8\n\n%s",
 				"<html><body><h1>Not found</h1></body></html>");
 	return response;
 }
@@ -1119,15 +1124,16 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
                 return response;
 			}
 			size_t len;
-			char buffer_room[(MAX_LENGTH+31)];
-            char buffer_rooms[(MAX_LENGTH+31)*num_rooms];
-			strcpy(buffer_rooms, "");
+			char buffer_room[(MAX_LENGTH+MAX_LENGTH+31)];
+            char buffer_rooms[sizeof(buffer_room)*num_rooms];
+			strcpy(buffer_rooms, "");            
             for(size_t i=0;i<num_rooms;i++){
                 len  = sprintf(buffer_room,
 					   	"<option value=\"%s\">%s</option>",
 						rooms[i].name_room,
 						rooms[i].name_room);
                 buffer_room[len]='\n';
+                buffer_room[len+1]='\0';
                 strcat(buffer_rooms, buffer_room);
             }
             size_t id_user;
@@ -1144,8 +1150,11 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 						*request_return, err);
                 return response;
             }
-			char buffer_all[strlen(buffer_rooms)+strlen(buffer_file)+1+strlen(users[id_user].name)];
-			passed = insert_string(buffer_file,"<-- INSERT_ROOMS -->",buffer_rooms,
+			char buffer_all[strlen(buffer_file)-
+                strlen(buffer_rooms)+1+
+                strlen(users[id_user].name)-
+                strlen("<!-- INSERT_ROOMS -->\0")];
+			passed = insert_string(buffer_file,"<!-- INSERT_ROOMS -->",buffer_rooms,
 				   	buffer_all, sizeof(buffer_all));
 			if(passed<0){
                 response = error_send();
