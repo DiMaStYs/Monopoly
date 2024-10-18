@@ -161,15 +161,37 @@ int insert_string(char * file_string, char * search_string, char * inserting_str
 				return 0;
 			}
 		}else{
-			if(strcpy(result, file_string)==NULL){
-				printf("Error strcpy");
-				return -6;
+		    if(c_file-file_string!=0){
+				if(*(c_file+strlen(search_string))!='\0'){
+					if(strncpy(result, file_string, c_file-file_string)==NULL){
+						printf("Error strcpy");
+						return -3;
+					}
+					result[c_file-file_string]='\0';
+					if(strcat(result, c_file+len_search)==NULL){
+						printf("Error strcat");
+						return -5;
+					}
+					return 0;
+				}else{
+					if(strncpy(result, file_string, c_file-file_string)==NULL){
+						printf("Error strncpy");
+						return -3;
+					}
+					result[c_file-file_string]='\0';
+					return 0;
+				}
+			}else{
+				if(strcat(result, c_file+len_search)==NULL){
+					printf("Error strcat");
+					return -5;
+				}
+				return 0;
 			}
-			return 1;
 		}
 	}else{
 		strcpy(result, file_string);
-		return -7;
+		return -6;
 	}
 }
 
