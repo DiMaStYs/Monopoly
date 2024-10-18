@@ -104,8 +104,8 @@ char        now_pwd_dirrectory[MAX_LENGTH_PWD];
 
 size_t num_users = 0;
 size_t num_rooms = 0;
-//new
-//////////////////////////////////////////////
+
+
 int insert_string(char * file_string, char * search_string, char * inserting_string, char * result, size_t result_size){
 	size_t len_search = strlen(search_string);
 	size_t len_insert = strlen(inserting_string);
@@ -233,7 +233,7 @@ int send_html(char *path_file, char * result){
 	rewind(html_file);
 	if (fread(result, sizeof(char), file_size, html_file) != file_size) {
 		fclose(html_file);
-		return -4;
+		return -3;
 	}
 	// ƒобавл€ем нуль-терминатор в конец строки
 	result[file_size] = '\0';
@@ -249,7 +249,7 @@ int create_room(char * buffer_name){
 
 			if((link_dir = getcwd(NULL,0))==NULL){
 				perror("getcwd error");
-				return -5;
+				return -1;
 			}else{
 				char link_history[4096];
 				strcpy(link_history, link_dir);
@@ -259,7 +259,7 @@ int create_room(char * buffer_name){
 				FILE *file = fopen(link_history, "w");
 				if(file == NULL){
 					perror("Error opening file");
-					return 1;
+					return -2;
 				}else{
 					fputs("",file);
 					fclose(file);
@@ -281,10 +281,10 @@ int create_room(char * buffer_name){
 				}
 			}
 		}else{
-			return -2;
+			return -4;
 		}
 	}else{
-		return -1;
+		return -5;
 	}
 }
 
@@ -352,8 +352,9 @@ int help_insert_base(char *login, char *name, char *IP, size_t *t){
 		}else{
 			if(high == 0){
 				break;
+			}else{
+                high = mid - 1;
 			}
-			high = mid - 1;
 		}
 	}
 	if (cmp!=0){
@@ -362,7 +363,7 @@ int help_insert_base(char *login, char *name, char *IP, size_t *t){
 	*t = mid;
 	return 0;
 }
-
+//correct////////////////////////////////////////////
 int insert_base(char *login, char *name, char *password, char *IP, size_t *p){
 	//help_insert_base
 	size_t k[3];
