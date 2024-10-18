@@ -7,13 +7,8 @@
 #include <locale.h>
 #include <math.h>
 ////////////////////
-#include <winsock2.h>
-#include <windows.h>
-#include <ws2tcpip.h>
-#pragma comment(lib, "ws2_32.lib")
-
 ////////////////////
-//#include <arpa/inet.h>
+#include <arpa/inet.h>
 
 #define strsize(args...) snprintf(NULL, 0, args) + sizeof('\0')
 #define PORT 8000
@@ -2005,7 +2000,7 @@ int main(void){
 	strcpy(users[0].password, "HvX0357\%");
 	for(size_t i=0; i<MAX_ROOMS;i++){
 		users[0].balance[i]=0;
-	}	
+	}
 	strcpy(names[0].name, "admin");
 	strcpy(names[0].login, "login");
 	strcpy(IPs[0].login, "login");
@@ -2042,7 +2037,7 @@ int main(void){
 	}
 	puts("ERROR");
 	printf("Explanation = %s\nIn file err = %s\nResult = %d",
-		err.function, err.a?"YES":"NO",err.result);	
+		err.function, err.a?"YES":"NO",err.result);
 	close(server_socket);
     return 0;
 }
