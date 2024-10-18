@@ -1019,10 +1019,10 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
             if (buffer_size == 0){
 				response = error_send();
 				if(response == NULL){
-					*request_return = -10;
+					*request_return = -1000;
 					return NULL;
 				}
-				*request_return = -3;
+				*request_return = -1;
 				sprintf(explanation, "correct_size = %lu /", buffer_size);
                 error_handler(buffer, explanation, *request_return, err);
                 return response;
@@ -1032,10 +1032,10 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
             if(passed<0){
 				response = error_send();
 				if(response == NULL){
-					*request_return = -10;
+					*request_return = -1000;
 					return NULL;
 				}
-				*request_return = -3;
+				*request_return = -2;
 				sprintf(explanation, "send_html = %d /", passed);
                 error_handler(buffer, explanation, *request_return, err);
                 return response;
@@ -1084,10 +1084,10 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 			if(buffer_size==0){
 				response = error_send();
 				if(response == NULL){
-					*request_return = -10;
+					*request_return = -1000;
 					return NULL;
 				}
-				*request_return = -3;
+				*request_return = -1;
 				sprintf(explanation, "correct_size=%lu", buffer_size);
                 error_handler(buffer, explanation,
 					   	*request_return, err);
@@ -1098,10 +1098,10 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
             if(passed<0){
 				response = error_send();
 				if(response == NULL){
-					*request_return = -10;
+					*request_return = -1000;
 					return NULL;
 				}
-				*request_return = -3;
+				*request_return = -2;
 				sprintf(explanation, "send_html=%d", passed);
                 error_handler(buffer, "send_html /registrarion",
 					   	*request_return, err);
@@ -1118,10 +1118,10 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
             if(buffer_size==0){
                 response = error_send();
 				if(response == NULL){
-					*request_return = -10;
+					*request_return = -1000;
 					return NULL;
 				}
-				*request_return = -3;
+				*request_return = -1;
 				sprintf(explanation, "correct_size=%lu", buffer_size);
 				error_handler(buffer, explanation,
 						*request_return, err);
@@ -1132,10 +1132,10 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
             if(passed<0){
                 response = error_send();
 				if(response == NULL){
-					*request_return = -10;
+					*request_return = -1000;
 					return NULL;
 				}
-				*request_return = -3;
+				*request_return = -2;
 				sprintf(explanation, "send_html=%d", passed);
 				error_handler(buffer, explanation,
 						*request_return, err);
@@ -1159,7 +1159,7 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
             if(passed<0){
                 response = error_send();
 				if(response == NULL){
-					*request_return = -10;
+					*request_return = -1000;
 					return NULL;
 				}
 				*request_return = -3;
@@ -1177,10 +1177,10 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 			if(passed<0){
                 response = error_send();
 				if(response == NULL){
-					*request_return = -10;
+					*request_return = -1000;
 					return NULL;
 				}
-				*request_return = -3;
+				*request_return = -4;
 				sprintf(explanation, "insert_string=%d", passed);
 				error_handler(buffer, explanation,
 						*request_return, err);
@@ -1191,10 +1191,10 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 			if(passed<0){
                 response = error_send();
 				if(response == NULL){
-					*request_return = -10;
+					*request_return = -1000;
 					return NULL;
 				}
-				*request_return = -3;
+				*request_return = -5;
 				sprintf(explanation, "insert_string=%d", passed);
 				error_handler(buffer, explanation,
 						*request_return, err);
@@ -1225,10 +1225,10 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 			if(num_rooms==0){
                 response = error_send();
 				if(response == NULL){
-					*request_return = -10;
+					*request_return = -1000;
 					return NULL;
 				}
-				*request_return = -4;
+				*request_return = -1;
 				error_handler(buffer, "num_rooms == 0 /rooms/&&",
 						*request_return, err);
                 return response;
@@ -1257,10 +1257,10 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 			if(cmp!=0){
                 response = error_send();
 				if(response == NULL){
-					*request_return = -10;
+					*request_return = -1000;
 					return NULL;
 				}
-				*request_return = -5;
+				*request_return = -2;
 				error_handler(buffer, "room_name not found /rooms/...",
 						*request_return, err);
                 return response;
@@ -1271,7 +1271,7 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 			if(passed!=0){
                 response = error_send();
 				if(response == NULL){
-					*request_return = -10;
+					*request_return = -1000;
 					return NULL;
 				}
 				*request_return = -3;
@@ -1284,10 +1284,10 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 			if(passed!=0){
                 response = error_send();
 				if(response == NULL){
-					*request_return = -10;
+					*request_return = -1000;
 					return NULL;
 				}
-				*request_return = -3;
+				*request_return = -4;
 				sprintf(explanation, "connect_room = %d", passed);
 				error_handler(buffer, explanation,
 						*request_return, err);
@@ -1300,10 +1300,10 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 				if(buffer_size==0){
 					response = error_send();
 					if(response == NULL){
-						*request_return = -10;
+						*request_return = -1000;
 						return NULL;
 					}
-					*request_return = -3;
+					*request_return = -5;
 					error_handler(buffer, "correct_size = 0 /rooms/& ",
 							*request_return, err);
 					return response;
@@ -1313,10 +1313,10 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 				if(passed!=0){
 					response = error_send();
 					if(response == NULL){
-						*request_return = -10;
+						*request_return = -1000;
 						return NULL;
 					}
-					*request_return = -3;
+					*request_return = -6;
 					sprintf(explanation, "send_html = %d", passed);
 					error_handler(buffer, explanation,
 							*request_return, err);
@@ -1347,7 +1347,7 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 							"Content-Type:text/html;charset=uts-8\n%s",
 							buffer_result));
 				if(response == NULL){
-					*request_return = -1;
+					*request_return = -1000;
 					return NULL;
 				}
 				sprintf(response, "HTTP/1.1 200 OK\n"
@@ -1357,7 +1357,7 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 		// /rooms/&/history
 				char * link_pwd=getcwd(NULL, 0);//
 				if(link_pwd == NULL){
-					*request_return = -11;
+					*request_return = -1000;
 					return NULL;
 				}
 				char link_history[strlen(link_pwd)+strlen(name_room)+10];
@@ -1369,10 +1369,10 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 				if(history_size==0){
 					response = error_send();
 					if(response == NULL){
-						*request_return = -10;
+						*request_return = -1000;
 						return NULL;
 					}
-					*request_return = -3;
+					*request_return = -5;
 					error_handler(buffer, "correct_size=0 /rooms/&/history",
 							*request_return, err);
 					return response;
@@ -1382,10 +1382,10 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 				if(passed!=0){
 					response = error_send();
 					if(response == NULL){
-						*request_return = -10;
+						*request_return = -1000;
 						return NULL;
 					}
-					*request_return = -3;
+					*request_return = -6;
 					sprintf(explanation, "send_html = %d", passed);
 					error_handler(buffer, explanation,
 							*request_return, err);
@@ -1395,7 +1395,7 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 							"Content-Type:text/html;charset=utf-8\n\%s",
 							history_buffer));
 				if(response == NULL){
-					*request_return = -1;
+					*request_return = -1000;
 					return NULL;
 				}
 				sprintf(response, "HTTP/1.1 404 OK\n"
@@ -1408,10 +1408,10 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 				if(passed!=0){
 					response = error_send();
 					if(response == NULL){
-						*request_return = -10;
+						*request_return = -1000;
 						return NULL;
 					}
-					*request_return = -3;
+					*request_return = -5;
 					sprintf(explanation, "view_processing = %d ", passed);
 					error_handler(buffer, explanation,
 							*request_return, err);
@@ -1421,10 +1421,10 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 				if(buffer_size==0){
 					response = error_send();
 					if(response == NULL){
-						*request_return = -10;
+						*request_return = -1000;
 						return NULL;
 					}
-					*request_return = -3;
+					*request_return = -6;
 					error_handler(buffer, "correct_size=0 /rooms/&/conformation_bank",
 							*request_return, err);
 					return response;
@@ -1435,10 +1435,10 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 				if(passed!=0){
 					response = error_send();
 					if(response == NULL){
-						*request_return = -10;
+						*request_return = -1000;
 						return NULL;
 					}
-					*request_return = -3;
+					*request_return = -7;
 					sprintf(explanation, "send_html = %d ", passed);
 					error_handler(buffer, explanation,
 							*request_return, err);
@@ -1450,10 +1450,10 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 				if(passed!=0){
 					response = error_send();
 					if(response == NULL){
-						*request_return = -10;
+						*request_return = -1000;
 						return NULL;
 					}
-					*request_return = -3;
+					*request_return = -8;
 					sprintf(explanation, "insert_string = %d ", passed);
 					error_handler(buffer, explanation,
 							*request_return, err);
@@ -1468,10 +1468,10 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 				if(passed!=0){
 					response = error_send();
 					if(response == NULL){
-						*request_return = -10;
+						*request_return = -1000;
 						return NULL;
 					}
-					*request_return = -3;
+					*request_return = -9;
 					sprintf(explanation, "insert_string = %d ", passed);
 					error_handler(buffer, explanation,
 							*request_return, err);
@@ -1480,19 +1480,17 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 				response=malloc(strsize("HTTP/1.1 200 OK\n"
 							"Content-Type:text/html;charset=utf-8\n%s",buffer_result));
 				if(response == NULL){
-					*request_return = -1;
+					*request_return = -1000;
 					return NULL;
 				}
 				sprintf(response,"HTTP/1.1 200 OK\n"
 							"Content-Type:text/html;charset=utf-8\n%s",buffer_result);
-			}else if(strcmp(index_symbol,"")==0){
-                return 0;
-
+//create /rooms/&/confirmation 
 			}else{
 		// /rooms/&/!?!?
                 response = error_send();
 				if(response == NULL){
-					*request_return = -10;
+					*request_return = -1000;
 					return NULL;
 				}
 				*request_return = -1;
@@ -1505,7 +1503,7 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 		    if(buffer_size<0){
                 response = error_send();
 				if(response == NULL){
-					*request_return = -10;
+					*request_return = -1000;
 					return NULL;
 				}
 				*request_return = -1;
@@ -1517,10 +1515,10 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
             if(send_html(htmls[5].name_url_html,buffer_file)!=0){
                 response = error_send();
 				if(response == NULL){
-					*request_return = -10;
+					*request_return = -1000;
 					return NULL;
 				}
-				*request_return = -1;
+				*request_return = -2;
 				error_handler(buffer, "send_html /create_room",
 						*request_return, err);
                 return response;
@@ -1529,7 +1527,7 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 							"Content-Type:text/html;charset=utf-8\n\%s",
 							buffer_file));
 				if(response == NULL){
-					*request_return = -1;
+					*request_return = -1000;
 					return NULL;
 				}
 				sprintf(response, "HTTP/1.1 200 OK\n"
@@ -1539,7 +1537,7 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 		}else{
             response = error_send();
 		    if(response == NULL){
-				*request_return = -10;
+				*request_return = -1000;
 				return NULL;
 			}
 			*request_return = -1;
