@@ -110,7 +110,11 @@ int insert_string(char * file_string, char * search_string, char * inserting_str
 	size_t len_search = strlen(search_string);
 	size_t len_insert = strlen(inserting_string);
 	size_t len_file   = strlen(file_string);
-	size_t len_result = len_file - len_search + len_insert+1;
+// correct response? 
+	if(len_file+len_insert<len_search){
+        return -1;
+    }
+    size_t len_result = len_file + len_insert + 1 - len_search;
 	if(result_size<len_result){
 		return -1;
 	}
@@ -563,7 +567,7 @@ int name_for_login(char *name, size_t *id_login){
 
 void html_way_create(void){
 	char path[256];
-    getcwd(path,256);
+    strcpy(path, now_pwd_dirrectory);
     strcat(path, "/htmls/");
     for(unsigned short int i = 0;i < MAX_HTML_COUNTER; i++){
 		strcat(htmls[i].name_url_html, path);
@@ -577,7 +581,6 @@ void html_way_create(void){
 	strcat(htmls[5].name_url_html, "confirmation.html\0");
 	strcat(htmls[6].name_url_html, "confirmation_bank.html\0");
 	strcat(htmls[7].name_url_html, "history.html\0");
-
 }
 
 int insert_account(char * login, char * name, char * password, char * IP){
@@ -1127,8 +1130,9 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 						*request_return, err);
                 return response;
             }
+            printf("Buffer_size = %llu\n",buffer_size);
             char buffer_file[buffer_size];
-			passed = send_html(htmls[2].name_url_html, buffer_file);
+            passed = send_html(htmls[2].name_url_html, buffer_file);
             if(passed<0){
                 response = error_send();
 				if(response == NULL){
@@ -1141,19 +1145,25 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 						*request_return, err);
                 return response;
 			}
+            printf("Buffer_file = %s\n", buffer_file);
 			size_t len;
 			char buffer_room[(MAX_LENGTH+MAX_LENGTH+31)];
             char buffer_rooms[sizeof(buffer_room)*num_rooms];
-			strcpy(buffer_rooms, "");
-            for(size_t i=0;i<num_rooms;i++){
-                len  = sprintf(buffer_room,
-					   	"<option value=\"%s\">%s</option>",
-						rooms[i].name_room,
-						rooms[i].name_room);
-                buffer_room[len]='\n';
-                buffer_room[len+1]='\0';
-                strcat(buffer_rooms, buffer_room);
+            if(num_rooms==0){
+                strcpy(buffer_rooms,"\n\0");
+            }else{
+                for(size_t i=0;i<num_rooms;i++){
+                    puts("What!?");
+                    len  = sprintf(buffer_room,
+                            "<option value=\"%s\">%s</option>",
+                            rooms[i].name_room,
+                            rooms[i].name_room);
+                    buffer_room[len]='\n';
+                    buffer_room[len+1]='\0';
+                    strcat(buffer_rooms, buffer_room);
+                }
             }
+            printf("Buffer_rooms = %s\n", buffer_file);
             size_t id_user;
             passed=IP_for_login(IP, &id_user);
             if(passed<0){
@@ -1168,11 +1178,11 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 						*request_return, err);
                 return response;
             }
-			char buffer_all[strlen(buffer_file)-
+			char buffer_all[strlen(buffer_file)+
                 strlen(buffer_rooms)+1+
                 strlen(users[id_user].name)-
                 strlen("<!-- INSERT_ROOMS -->\0")];
-			passed = insert_string(buffer_file,"<!-- INSERT_ROOMS -->",buffer_rooms,
+			passed = insert_string(buffer_file,"<!-- INSERT_ROOMS -->\0",buffer_rooms,
 				   	buffer_all, sizeof(buffer_all));
 			if(passed<0){
                 response = error_send();
@@ -2048,7 +2058,8 @@ int main(void){
         strcpy(IP_main ,inet_ntoa(client_addr.sin_addr));
 	///////////////////////////////////////////////////////////////////////////////////
 		exit_handler = handle_request(buffer, IP_main, &result_handle, &err);
-		printf("Exit buffer = /n%s/n", exit_handler);
+		printf("Exit buffer = OK\n", exit_handler);
+
         if(exit_handler == NULL){
 	///////////////////////////////////////////////////////////////////////////////////
 			result_handle =-10;
