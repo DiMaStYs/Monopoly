@@ -1130,7 +1130,6 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 						*request_return, err);
                 return response;
             }
-            printf("Buffer_size = %llu\n",buffer_size);
             char buffer_file[buffer_size];
             passed = send_html(htmls[2].name_url_html, buffer_file);
             if(passed<0){
@@ -1145,15 +1144,14 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 						*request_return, err);
                 return response;
 			}
-            printf("Buffer_file = %s\n", buffer_file);
-			size_t len;
-			char buffer_room[(MAX_LENGTH+MAX_LENGTH+31)];
-            char buffer_rooms[sizeof(buffer_room)*num_rooms];
-            if(num_rooms==0){
-                strcpy(buffer_rooms,"\n\0");
-            }else{
+			
+            size_t len;
+            char *buffer_rooms;
+			if(num_rooms!=0){
+                char buffer_room[(MAX_LENGTH+MAX_LENGTH+31)];
+                buffer_rooms= malloc(sizeof(buffer_room)*num_rooms);
+                buffer_rooms[0]='\0';
                 for(size_t i=0;i<num_rooms;i++){
-                    puts("What!?");
                     len  = sprintf(buffer_room,
                             "<option value=\"%s\">%s</option>",
                             rooms[i].name_room,
@@ -1162,8 +1160,12 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
                     buffer_room[len+1]='\0';
                     strcat(buffer_rooms, buffer_room);
                 }
+            }else{
+                buffer_rooms= malloc(1);
+                *buffer_rooms='\0';
             }
-            printf("Buffer_rooms = %s\n", buffer_file);
+            printf("Buffer_file =%s\n", buffer_file);
+            printf("Buffer_rooms =%s\n", buffer_rooms);
             size_t id_user;
             passed=IP_for_login(IP, &id_user);
             if(passed<0){
@@ -1180,8 +1182,8 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
             }
 			char buffer_all[strlen(buffer_file)+
                 strlen(buffer_rooms)+1+
-                strlen(users[id_user].name)-
-                strlen("<!-- INSERT_ROOMS -->\0")];
+                strlen(users[id_user].name)
+            ];
 			passed = insert_string(buffer_file,"<!-- INSERT_ROOMS -->\0",buffer_rooms,
 				   	buffer_all, sizeof(buffer_all));
 			if(passed<0){
@@ -1196,7 +1198,7 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 						*request_return, err);
                 return response;
 			}
-			passed = insert_string(buffer_all, "<!-- INSERT_THIS_USER -->",buffer_rooms,
+			passed = insert_string(buffer_all, "<!-- INSERT_THIS_USER -->",users[id_user].name,
 				   	buffer_all, sizeof(buffer_all));
 			if(passed<0){
                 response = error_send();
@@ -1216,6 +1218,7 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
             sprintf(response,
 				   	"HTTP/1.1 200 OK\nContent-Type: text/html; charset=utf-8\n\n%s",
 				   	buffer_all);
+            free(buffer_rooms);
 		}else if(strncmp("/rooms/",HTTP_ex.URL,7)==0){
         //GET /rooms/& HTTP/1.1
             char *index_symbol = HTTP_ex.URL;
