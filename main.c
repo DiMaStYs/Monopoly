@@ -2009,6 +2009,7 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 	*request_return = 0;
 	return response;
 }
+
 int main(void){
 	getcwd(now_pwd_dirrectory, MAX_LENGTH_PWD);
     html_way_create();
