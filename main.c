@@ -45,7 +45,7 @@ typedef struct{
 
 typedef struct{
 	char user2[MAX_LENGTH];
-	size_t rooms;
+    char room[MAX_LENGTH];
 	size_t money;
 }LastOperation;
 
@@ -301,7 +301,6 @@ size_t binary_search(char * buffer){
 		mid = low + (high - low) / 2;
 		cmp = strcmp(users[mid].login, buffer);
 		if (cmp == 0){
-
 			return mid;
 		}else if (cmp < 0){
 			low = mid + 1;
@@ -382,7 +381,7 @@ int insert_base(char *login, char *name, char *password, char *IP, size_t *p){
 
 
 		strcpy(names[k[1]].name, name);
-		strcpy(names[k[1]].login, name);
+		strcpy(names[k[1]].login, login);
 
 		strcpy(IPs[k[2]].login, login);
 		strcpy(IPs[k[2]].IP, IP);
@@ -396,57 +395,54 @@ int insert_base(char *login, char *name, char *password, char *IP, size_t *p){
 		num_users += 1;
 	}else{
 		help_insert_base(login, name, IP, k);
-
 		if(strcmp( users[k[0]].login, login)!=0){
-			for(size_t i= num_users; i>k[0]; i--){
-				users[i] = users[i-1];
-			}
-			for(size_t i= num_users; i>k[1]; i--){
-				names[i] = names[i-1];
-			}
-			for(size_t i= num_users; i>k[2] ;i--){
-				IPs[i] = IPs[i-1];
-			}
+            if(strcmp(names[k[1]].name, name)!=0){
+                if(strcmp(users[k[0]].login, login)>0){
+                    k[0]+=1;
+                }
+                for(size_t i= num_users; i>k[0]; i--){
+                    users[i] = users[i-1];
+                }
+                if(strcmp(names[k[1]].name, name)>0){
+                    k[1]+=1;
+                }
+                for(size_t i= num_users; i>k[1]; i--){
+                    names[i] = names[i-1];
+                }
+                if(strcmp(IPs[k[2]].IP, IP)<0){
+                    k[2]+=1;
+                    for(size_t i= num_users; i>k[2] ;i--){ 
+                        IPs[i] = IPs[i-1];
+                    }
+                }else if(strcmp(IPs[k[2]].IP, IP)>0){
+                    for(size_t i= num_users; i>k[2] ;i--){ 
+                        IPs[i] = IPs[i-1];
+                    }
+                }
+                strcpy(users[k[0]].login, login);
+                strcpy(users[k[0]].name, name);
+                strcpy(users[k[0]].password, password);
+                strcpy(users[k[0]].IP, IP);
 
 
-			strcpy(users[k[0]].login, login);
-			strcpy(users[k[0]].name, name);
-			strcpy(users[k[0]].password, password);
-			strcpy(users[k[0]].IP, IP);
+                strcpy(names[k[1]].name, name);
+                strcpy(names[k[1]].login, name);
 
+                strcpy(IPs[k[2]].login, login);
+                strcpy(IPs[k[2]].IP, IP);
 
-			strcpy(names[k[1]].name, name);
-			strcpy(names[k[1]].login, name);
-
-			strcpy(IPs[k[2]].login, login);
-			strcpy(IPs[k[2]].IP, IP);
-
-			for(size_t i=0;i<MAX_ROOMS;i++){
-				users[k[0]].balance[i]=*p;
-				if((i+1)<MAX_ROOMS){
-					p+=1;
-				}
-			}
-			num_users += 1;
+                for(size_t i=0;i<MAX_ROOMS;i++){
+                    users[k[0]].balance[i]=*p;
+                    if((i+1)<MAX_ROOMS){
+                        p+=1;
+                    }
+                }
+                num_users += 1;
+            }else{
+                return -2;
+            }
 		}else{
-			strcpy(users[k[0]].login, login);
-			strcpy(users[k[0]].name, name);
-			strcpy(users[k[0]].password, password);
-			strcpy(users[k[0]].IP, IP);
-
-
-			strcpy(names[k[1]].name, name);
-			strcpy(names[k[1]].login, name);
-
-			strcpy(IPs[k[2]].login, login);
-			strcpy(IPs[k[2]].IP, IP);
-
-			for(size_t i=0;i<MAX_ROOMS;i++){
-				users[k[0]].balance[i]=*p;
-				if((i+1)<MAX_ROOMS){
-					p+=1;
-				}
-			}
+            return -1;    
 		}
 	}
 	return 0;
@@ -595,7 +591,7 @@ int insert_account(char * login, char * name, char * password, char * IP){
 		if((name_for_login(name, &index))!=0){
 			if((insert_base(login, name, password, IP, balance))==0){
 				users[index].lastoperation.money = 0;
-				users[index].lastoperation.rooms = 0;
+				strcpy(users[index].lastoperation.room, "FUN");
 				strcpy(users[index].lastoperation.user2, "Jocker");
 				return 0;
 			}else{
