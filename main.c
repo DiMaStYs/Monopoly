@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <locale.h>
 #include <math.h>
+#include <limits.h>
 ////////////////////
 ////////////////////
 #include <arpa/inet.h>
@@ -110,8 +111,7 @@ int insert_string(char * file_string, char * search_string, char * inserting_str
 	size_t len_search = strlen(search_string);
 	size_t len_insert = strlen(inserting_string);
 	size_t len_file   = strlen(file_string);
-// correct response? 
-	if(len_file+len_insert<len_search){
+    if(len_file+len_insert<len_search){
         return -1;
     }
     size_t len_result = len_file + len_insert + 1 - len_search;
@@ -122,74 +122,81 @@ int insert_string(char * file_string, char * search_string, char * inserting_str
 		strcpy(result, file_string);
 		return -2;
 	}
+    char cpy_result[len_result];
 	char * c_file = strstr(file_string, search_string);
 	if(c_file != NULL){
 		if(len_insert!=0){
 			if(c_file-file_string!=0){
 				if(*(c_file+strlen(search_string))!='\0'){
-					if(strncpy(result, file_string, c_file-file_string)==NULL){
+					if(strncpy(cpy_result, file_string, c_file-file_string)==NULL){
 						printf("Error strcpy");
 						return -3;
 					}
-					result[c_file-file_string]='\0';
-					if(strcat(result, inserting_string)==NULL){
+					cpy_result[c_file-file_string]='\0';
+					if(strcat(cpy_result, inserting_string)==NULL){
 						printf("Error strcat");
 						return -4;
 					}
-					if(strcat(result, c_file+len_search)==NULL){
+					if(strcat(cpy_result, c_file+len_search)==NULL){
 						printf("Error strcat");
 						return -5;
 					}
+                    strcpy(result, cpy_result);
 					return 0;
 				}else{
-					if(strncpy(result, file_string, c_file-file_string)==NULL){
+					if(strncpy(cpy_result, file_string, c_file-file_string)==NULL){
 						printf("Error strncpy");
 						return -3;
 					}
-					result[c_file-file_string]='\0';
-					if(strcat(result, inserting_string)==NULL){
+					cpy_result[c_file-file_string]='\0';
+					if(strcat(cpy_result, inserting_string)==NULL){
 						printf("Error strcat");
 						return -4;
 					}
+                    strcpy(result, cpy_result);
 					return 0;
 				}
 			}else{
-				if(strcpy(result, inserting_string)==NULL){
+				if(strcpy(cpy_result, inserting_string)==NULL){
 					printf("Error strcpy");
 					return -4;
 				}
-				if(strcat(result, c_file+len_search)==NULL){
+				if(strcat(cpy_result, c_file+len_search)==NULL){
 					printf("Error strcat");
 					return -5;
 				}
+                strcpy(result, cpy_result);
 				return 0;
 			}
 		}else{
 		    if(c_file-file_string!=0){
 				if(*(c_file+strlen(search_string))!='\0'){
-					if(strncpy(result, file_string, c_file-file_string)==NULL){
+					if(strncpy(cpy_result, file_string, c_file-file_string)==NULL){
 						printf("Error strcpy");
 						return -3;
 					}
-					result[c_file-file_string]='\0';
-					if(strcat(result, c_file+len_search)==NULL){
+					cpy_result[c_file-file_string]='\0';
+					if(strcat(cpy_result, c_file+len_search)==NULL){
 						printf("Error strcat");
 						return -5;
 					}
+                    strcpy(result, cpy_result);
 					return 0;
 				}else{
-					if(strncpy(result, file_string, c_file-file_string)==NULL){
+					if(strncpy(cpy_result, file_string, c_file-file_string)==NULL){
 						printf("Error strncpy");
 						return -3;
 					}
-					result[c_file-file_string]='\0';
+					cpy_result[c_file-file_string]='\0';
+                    strcpy(result, cpy_result);
 					return 0;
 				}
 			}else{
-				if(strcat(result, c_file+len_search)==NULL){
+				if(strcat(cpy_result, c_file+len_search)==NULL){
 					printf("Error strcat");
 					return -5;
 				}
+                strcpy(result, cpy_result);
 				return 0;
 			}
 		}
@@ -573,22 +580,25 @@ void html_way_create(void){
 	strcat(htmls[2].name_url_html, "rooms.html\0");
 	strcat(htmls[3].name_url_html, "create_room.html\0");
 	strcat(htmls[4].name_url_html, "game.html\0");
-//	strcat(htmls[4].name_url_html, "base.html\0");
 	strcat(htmls[5].name_url_html, "confirmation.html\0");
 	strcat(htmls[6].name_url_html, "confirmation_bank.html\0");
 	strcat(htmls[7].name_url_html, "history.html\0");
+	strcat(htmls[8].name_url_html, "profile.html\0");
 }
 
 int insert_account(char * login, char * name, char * password, char * IP){
 	//binary_search, name_for_login, insert_base
-	size_t balance[MAX_ROOMS];
+    size_t balance[MAX_ROOMS];
+    printf("binary_search ");
 	size_t index =binary_search(login);
 	for(int j=0; j<MAX_ROOMS;j++){
 		balance[j]=15000000;
 	}
-
+    
 	if((strcmp(users[index].login, login))!=0){
-		if((name_for_login(name, &index))!=0){
+        printf("name_for_login ");
+        if((name_for_login(name, &index))!=0){
+            printf("insert_base ");
 			if((insert_base(login, name, password, IP, balance))==0){
 				users[index].lastoperation.money = 0;
 				strcpy(users[index].lastoperation.room, "FUN");
@@ -757,6 +767,7 @@ int money_transfer_bank(char *name, int room, size_t money){
 
 int view_processing(char * user_request,int room, char * result){
 	char process[MAX_LENGTH+150];
+
 	strcpy(result, "");
 	for(int i=0;i<rooms[room].counter_request;i++){
 		if(strstr(rooms[room].request[i].uninterviewed, user_request)!=NULL){
@@ -835,144 +846,298 @@ char * error_send(void){
 				"<html><body><h1>Not found</h1></body></html>");
 	return response;
 }
-
-int dataProcessing(char *buffer, char *IP, Error *err, HTTP_Context *HTTP_ex){
-	//hasdf
-	int passed=0;
-	//size_t passeduns=0;
-	if(strcmp(HTTP_ex->Method, "GET\0")==0){
-		puts("Error");
-		passed= -100;
-		return passed;
-	}else if(strcmp(HTTP_ex->Method, "POST\0") == 0){
-		if(strcmp("/\0", HTTP_ex->URL)==0){
-			size_t index_user;
-			char buffer_login[MAX_LENGTH];
-			char buffer_password[MAX_LENGTH];
-			passed = insert_field(buffer, "login=", buffer_login);
-			if(passed==0){
-				passed = insert_field(buffer, "password=", buffer_password);
-				if(passed == 0){
-					index_user=binary_search(buffer_login);
-					if((strcmp(users[index_user].password, buffer_password)==0)&&
-							(strcmp(users[index_user].login, buffer_login)==0)){
-						passed = 0;
-					}else{
-						return -50;// Not password or login this account
-					}
-				}else{
-					error_handler(buffer,"insert_field error /\0", passed, err);
-				}
-			}else{
-				error_handler(buffer,"insert_field error /\0", passed, err);
-			}
-
-		}else if(strcmp("/registration\0",HTTP_ex->URL)==0){
-			char buffer_login[MAX_LENGTH];
-			char buffer_name[MAX_LENGTH];
-			char buffer_password[MAX_LENGTH];
-			passed = insert_field(buffer, "login=", buffer_login);
-			if(passed!=0){
-				error_handler(buffer,"insert_field error /registration\0", passed, err);
-				return passed;
-			}
-			passed = insert_field(buffer, "name=", buffer_name);
-			if(passed!=0){
-				error_handler(buffer,"insert_field error /registration\0", passed, err);
-				return passed;
-			}
-			passed = insert_field(buffer, "password=", buffer_password);
-			if(passed!=0){
-				error_handler(buffer,"insert_field error /registration\0", passed, err);
-				return passed;
-			}
-			passed = insert_account(buffer_login, buffer_name, buffer_password, IP);
-			if(passed!=0){
-				error_handler(buffer, "insert_account err /registration\0", passed, err);
-			}
-		}else if(strncmp("/rooms/\0", HTTP_ex->URL, 7)==0){
-			char *index_symbol = HTTP_ex->URL;
-			index_symbol +=7;
-			char name_room[MAX_LENGTH];
-			size_t index_room;
-			size_t index_char_in_name = 0;
-			while((*index_symbol!='\0')&&(*index_symbol!='/')){
-				name_room[index_char_in_name] = *index_symbol;
-				index_char_in_name++;
-				index_symbol++;
-			}
-			if(*index_symbol!='\0'){
-				index_symbol+=1;
-			}
-			name_room[index_char_in_name]='\0';
-			if(num_rooms==0){
-				passed = -25;
-				error_handler(buffer, "num_rooms = 0 err /rooms/&\0", passed, err);
-				return passed;
-			}
-			size_t low=0;
-			size_t high=num_rooms-1;
-			size_t mid=0;
-			int cmp=0;
-
-			while(low<=high){
-				mid = low +(high-low)/2;
-				cmp = strcmp(rooms[mid].name_room, name_room);
-				if(cmp==0){
-					low = high+1;
-				}else if(cmp<0){
-					low = mid+1;
-				}else{
-					if(high == 0){
-						break;
-					}else{
-						high = mid - 1;
-					}
-				}
-			}
-
-			if(cmp!=0){
-				passed=-125;
-				return passed;
-			}
-			index_room = mid;
-			size_t index_user;
-			passed = IP_for_login(IP, &index_user);
-			if(passed!=0){
-				error_handler(buffer, "IP_for_login err /rooms/& ", passed, err);
-				return passed;
-			}
-			connect_room(users[index_user].name, index_room);
-//index_room, name_room,index_user
-			if(*index_symbol=='\0'){
-				// /rooms/&
-			}else if(strcmp(index_symbol, "/c\0")==0){
-				// /rooms/&/conformation_bank
-			}else{
-				passed = -100;
-				error_handler(buffer, "What?! /rooms/&/!?!?!\0", passed, err);
-			}
-		}else if(strcmp("/create_room\0",HTTP_ex->URL)==0){
-			char name_room[MAX_LENGTH];
-			passed = insert_field(buffer, "name=", name_room);
-			if(passed!=0){
-				error_handler(buffer, "insert_field(name=) err /create_room", passed, err);
-				return passed;
-			}
-			passed = create_room(name_room);
-			if(passed!=0){
-				error_handler(buffer, "create_room err /create_room", passed, err);
-				return passed;
-			}
-		}else{
-			passed = -100;
-			return passed;
-		}
-	}else{
-		passed = -100;
-		return passed;
-	}
-	return passed;
+//new handle_html
+//1)buffer
+//2)way_to_html
+//3)request for head
+//4)data for user
+char * handle_html(char *buffer,char *html_doc,int *request_return, size_t *index_user){
+    int passed;
+	size_t passeduns=0;//return function(unsigned)
+    Error *err;
+    char *response;
+    char explanation[100];
+    if(strcmp(html_doc,htmls[0].name_url_html)==0){
+        // /
+        size_t buffer_size = correct_size(htmls[0].name_url_html);
+        if (buffer_size == 0){
+            response = error_send();
+            if(response == NULL){
+                *request_return = -1000;
+                return NULL;
+            }
+            *request_return = -1;
+            sprintf(explanation, "correct_size = %lu /", buffer_size);
+            error_handler(buffer, explanation, *request_return, err);
+            return response;
+        }
+        char buffer_file[buffer_size];
+        passed = send_html(htmls[0].name_url_html, buffer_file);
+        if(passed<0){
+            response = error_send();
+            if(response == NULL){
+                *request_return = -1000;
+                return NULL;
+            }
+            *request_return = -2;
+            sprintf(explanation, "send_html = %d /", passed);
+            error_handler(buffer, explanation, *request_return, err);
+            return response;
+        }
+        buffer_file[buffer_size] = '\0';
+        response = malloc(strlen(buffer_file)+1);
+        strcpy(response, buffer_file);
+    }else if(strcmp(html_doc,htmls[1].name_url_html)==0){
+        // /registration
+        size_t buffer_size = correct_size(htmls[1].name_url_html);
+        if(buffer_size==0){
+            response = error_send();
+            if(response == NULL){
+                *request_return = -1000;
+                return NULL;
+            }
+            *request_return = -1;
+            sprintf(explanation, "correct_size=%lu", buffer_size);
+            error_handler(buffer, explanation,
+                    *request_return, err);
+            return response;
+        }
+        char buffer_file[buffer_size];
+        passed = send_html(htmls[1].name_url_html, buffer_file);
+        if(passed<0){
+            response = error_send();
+            if(response == NULL){
+                *request_return = -1000;
+                return NULL;
+            }
+            *request_return = -2;
+            sprintf(explanation, "send_html=%d", passed);
+            error_handler(buffer, "send_html /registrarion",
+                    *request_return, err);
+            return response;
+        }
+        buffer_file[buffer_size] = '\0';
+        response=malloc(buffer_size);
+        if(response == NULL){
+            *request_return = -1000;
+            return NULL;
+        }
+        strcpy(response, buffer_file);
+    }else if(strcmp(html_doc,htmls[2].name_url_html)==0){
+        // /rooms
+        size_t buffer_size = correct_size(htmls[2].name_url_html);
+        size_t buffer_free = SIZE_MAX-buffer_size;
+        char *buffer_rooms;
+        size_t len;                         //for len buffer_room
+        if(buffer_size==0){
+            response = error_send();
+            if(response == NULL){
+                *request_return = -1000;
+                return NULL;
+            }
+            *request_return = -1;
+            sprintf(explanation, "correct_size=%lu", buffer_size);
+            error_handler(buffer, explanation,
+                    *request_return, err);
+            return response;
+        }
+        if(num_rooms!=0){
+            char buffer_room[(MAX_LENGTH+MAX_LENGTH+31)];
+            buffer_rooms= malloc(sizeof(buffer_room)*num_rooms);
+            buffer_rooms[0]='\0';
+            for(size_t i=0;i<num_rooms;i++){
+                len  = sprintf(buffer_room,
+                        "<option value=\"%s\">%s</option>",
+                        rooms[i].name_room,
+                        rooms[i].name_room);
+                buffer_room[len]='\n';
+                buffer_room[len+1]='\0';
+                strcat(buffer_rooms, buffer_room);
+            }
+        }else{
+            buffer_rooms= malloc(1);
+            *buffer_rooms='\0';
+        }
+        if(strlen(buffer_rooms)<buffer_free){
+            buffer_free-=strlen(buffer_rooms);
+            buffer_size+=strlen(buffer_rooms);
+        }else{
+            response = error_send();
+            if(response == NULL){
+                *request_return = -1000;
+                return NULL;
+            }
+            *request_return = -3;
+            sprintf(explanation, "buffer is full in handle_html = %d", 5);
+            error_handler(buffer, explanation,
+                    *request_return, err);
+            return response;
+        }
+        if(strlen(users[*index_user].name)<buffer_free){
+            buffer_size+= strlen(users[*index_user].name);
+        }else{
+            response = error_send();
+            if(response == NULL){
+                *request_return = -1000;
+                return NULL;
+            }
+            *request_return = -4;
+            sprintf(explanation, "buffer is full in handle_html = %d", 5);
+            error_handler(buffer, explanation,
+                    *request_return, err);
+            return response;
+        }
+        
+        char buffer_file[buffer_size];
+        passed = send_html(htmls[2].name_url_html, buffer_file);
+        if(passed<0){
+            response = error_send();
+            if(response == NULL){
+                *request_return = -1000;
+                return NULL;
+            }
+            *request_return = -2;
+            sprintf(explanation, "send_html=%d", passed);
+            error_handler(buffer, explanation,
+                    *request_return, err);
+            return response;
+        }
+        passed = insert_string(buffer_file,"<!-- INSERT_ROOMS -->\0",buffer_rooms,
+                buffer_file, buffer_size);
+        if(passed<0){
+            response = error_send();
+            if(response == NULL){
+                *request_return = -1000;
+                return NULL;
+            }
+            *request_return = -6;
+            sprintf(explanation, "insert_string=%d", passed);
+            error_handler(buffer, explanation,
+                    *request_return, err);
+            return response;
+        }
+        passed = insert_string(buffer_file, "<!-- INSERT_THIS_USER -->",users[*index_user].name,
+                buffer_file, buffer_size);
+        if(passed<0){
+            response = error_send();
+            if(response == NULL){
+                *request_return = -1000;
+                return NULL;
+            }
+            *request_return = -7;
+            sprintf(explanation, "insert_string=%d", passed);
+            error_handler(buffer, explanation,
+                    *request_return, err);
+            return response;
+        }
+        response=malloc(strlen(buffer_file));
+        if(response == NULL){
+            *request_return = -1000;
+            return NULL;
+        }
+        strcpy(response, buffer_file);
+        free(buffer_rooms);
+    }else if(strcmp(html_doc,htmls[3].name_url_html)==0){
+        // /create_room
+        size_t buffer_size = correct_size(htmls[3].name_url_html);
+        if(buffer_size==0){
+            response = error_send();
+            if(response == NULL){
+                *request_return = -1000;
+                return NULL;
+            }
+            *request_return = -1;
+            error_handler(buffer, "correct_size /create_room",
+                    *request_return, err);
+            return response;
+        }
+        char buffer_file[buffer_size];
+        passed=send_html(htmls[3].name_url_html,buffer_file);
+        if(passed!=0){
+            response = error_send();
+            if(response == NULL){
+                *request_return = -1000;
+                return NULL;
+            }
+            *request_return = -2;
+            sprintf(explanation,"send_html /create_room = %d", passed);
+            error_handler(buffer, explanation,
+                    *request_return, err);
+            return response;
+        }else{
+            response=malloc(buffer_size);
+            if(response == NULL){
+                *request_return = -1000;
+                return NULL;
+            }
+            strcpy(response, buffer_file);
+        }
+    }else if(strcmp(html_doc,htmls[4].name_url_html)==0){
+        // /rooms/&
+        response = error_send();
+        if(response == NULL){
+            *request_return = -1000;
+            return NULL;
+        }
+        *request_return = -1;
+        sprintf(explanation, "I not create request for %s", htmls[4].name_url_html);
+        error_handler(buffer, explanation,
+                *request_return, err);
+        return response;
+    }else if(strcmp(html_doc,htmls[5].name_url_html)==0){
+        // /rooms/&/confirmation
+        response = error_send();
+        if(response == NULL){
+            *request_return = -1000;
+            return NULL;
+        }
+        *request_return = -1;
+        sprintf(explanation, "I not create request for %s", htmls[5].name_url_html);
+        error_handler(buffer, explanation,
+                *request_return, err);
+        return response;
+    }else if(strcmp(html_doc,htmls[6].name_url_html)==0){
+        // /rooms/&/confirmaion_bank
+        response = error_send();
+        if(response == NULL){
+            *request_return = -1000;
+            return NULL;
+        }
+        *request_return = -1;
+        sprintf(explanation, "I not create request for %s", htmls[6].name_url_html);
+        error_handler(buffer, explanation,
+                *request_return, err);
+        return response;
+    }else if(strcmp(html_doc,htmls[7].name_url_html)==0){
+        // /rooms/&/history
+        response = error_send();
+        if(response == NULL){
+            *request_return = -1000;
+            return NULL;
+        }
+        *request_return = -1;
+        sprintf(explanation, "I not create request for %s", htmls[7].name_url_html);
+        error_handler(buffer, explanation,
+                *request_return, err);
+        return response;
+    }else if(strcmp(html_doc,htmls[8].name_url_html)==0){
+        // /profile
+        response = error_send();
+        if(response == NULL){
+            *request_return = -1000;
+            return NULL;
+        }
+        *request_return = -1;
+        sprintf(explanation, "I not create request for %s", htmls[8].name_url_html);
+        error_handler(buffer, explanation,
+                *request_return, err);
+        return response;
+    }else{
+        puts("handle_html: WHAT?!");
+        *request_return = -1001;
+        return NULL;
+    }
+    return 0;
 }
 
 char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
@@ -1009,13 +1174,16 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 		error_handler(buffer, explanation, *request_return, err);
         return response;
 	}
-	fprintf(html_file,"Next:\n\n%s",buffer);
+	fprintf(html_file,"\n\nNext:\n\n%s",buffer);
     fclose(html_file);
 //CREATE ANSWER
 	if (strcmp(HTTP_ex.Method,"GET\0")==0){
 	//GET:
 		if((strcmp("/\0", HTTP_ex.URL)==0)||(strcmp("/login\0", HTTP_ex.URL)==0)){
         // /
+/////////////////////////////////////////////////////////////////////////////
+            printf("correct_size ");
+/////////////////////////////////////////////////////////////////////////////
             size_t buffer_size = correct_size(htmls[0].name_url_html);
             if (buffer_size == 0){
 				response = error_send();
@@ -1029,6 +1197,9 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
                 return response;
 			}
             char buffer_file[buffer_size];
+/////////////////////////////////////////////////////////////////////////////
+            printf("send_html ");
+/////////////////////////////////////////////////////////////////////////////
 			passed = send_html(htmls[0].name_url_html, buffer_file);
             if(passed<0){
 				response = error_send();
@@ -1051,6 +1222,9 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 				   buffer_file);
 		}else if(strcmp("/registration\0",HTTP_ex.URL)==0){
 		// /registration
+/////////////////////////////////////////////////////////////////////////////
+            printf("correct_size ");
+/////////////////////////////////////////////////////////////////////////////
 			size_t buffer_size = correct_size(htmls[1].name_url_html);
 			if(buffer_size==0){
 				response = error_send();
@@ -1065,6 +1239,9 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
                 return response;
             }
             char buffer_file[buffer_size];
+/////////////////////////////////////////////////////////////////////////////
+            printf("send_html ");
+/////////////////////////////////////////////////////////////////////////////
 			passed = send_html(htmls[1].name_url_html, buffer_file);
             if(passed<0){
 				response = error_send();
@@ -1086,6 +1263,9 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 		}else if(strcmp("/rooms\0",HTTP_ex.URL)==0){
         // /rooms
             size_t id_user;
+/////////////////////////////////////////////////////////////////////////////
+            printf("IP_for_login ");
+/////////////////////////////////////////////////////////////////////////////
             passed=IP_for_login(IP, &id_user);
             if(passed<0){
 				response = error_send();
@@ -1099,6 +1279,7 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 					   	*request_return, err);
                 return response;
 			}
+
             response=malloc(strsize("HTTP/1.1 200 OK\n"
 					"Content-Type: text/html; charset=utf-8\n\n"
                     "Name=%s\nLogin=%s\nPassword=%s\n",
@@ -1125,10 +1306,19 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 			int index_user;
 			char buffer_login[MAX_LENGTH];
 			char buffer_password[MAX_LENGTH];
+/////////////////////////////////////////////////////////////////////////////
+            printf("insert_field ");
+/////////////////////////////////////////////////////////////////////////////
 			passed=insert_field(buffer, "login=", buffer_login);
             if(passed==0){
+/////////////////////////////////////////////////////////////////////////////
+                printf("insert_field ");
+/////////////////////////////////////////////////////////////////////////////
                 passed=insert_field(buffer, "password=", buffer_password);
 				if(passed==0){
+/////////////////////////////////////////////////////////////////////////////
+                    printf("binary_search ");
+/////////////////////////////////////////////////////////////////////////////
 					index_user=binary_search(buffer_login);
 					if(strcmp(users[index_user].password,buffer_password)==0){
 						response = malloc(strsize("HTTP/1.1 303 See Other\n"
@@ -1142,91 +1332,107 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 								"Content-Type: text/html; charset=utf-8\n"
 								"Location: /rooms\n\n");
 					}else{
-						response = malloc(strsize("HTTP/1.1 303 See Other\n"
+/////////////////////////////////////////////////////////////////////////////
+                        puts("Not currect password");
+                        printf("Yor password =%s\nCorrect =%s\n", 
+                                users[index_user].password,buffer_password);
+/////////////////////////////////////////////////////////////////////////////
+						response = malloc(strsize("HTTP/1.1 205 Reset Content\n"
 								"Content-Type: text/html; charset=utf-8\n"
 								"Location: /\n\n"));
 						if(response == NULL){
 							*request_return = -1;
 							return NULL;
 						}
-						strcpy(response, "HTTP/1.1 303 See Other\n"
+						strcpy(response, "HTTP/1.1 205 Reset Content\n"
 								"Content-Type: text/html; charset=utf-8\n"
 								"Location: /\n\n");
 					}
 				}else{
-					response = malloc(strsize("HTTP/1.1 303 See Other\n"
+					response = malloc(strsize("HTTP/1.1 400 Bad Request\n"
 							"Content-Type: text/html; charset=utf-8\n"
 							"Location: /\n\n"));
 					if(response == NULL){
 						*request_return = -1;
 						return NULL;
 					}
-					strcpy(response,"HTTP/1.1 303 See Other\n"
+					strcpy(response,"HTTP/1.1 400 Bad Request\n"
 							"Content-Type: text/html; charset=utf-8\n"
 							"Location: /\n\n");
 				}
 			}else{
-				response = malloc(strsize("HTTP/1.1 303 See Other\n"
-						"Content-Type: text/html; charset=utf-8\n"
-						"Location: /\n\n"));
-				if(response == NULL){
-					*request_return = -1;
-					return NULL;
-				}
-				strcpy(response,"HTTP/1.1 303 See Other\n"
-						"Content-Type: text/html; charset=utf-8\n"
-						"Location: /\n\n");
+                response = malloc(strsize("HTTP/1.1 400 Bad Request\n"
+                        "Content-Type: text/html; charset=utf-8\n"
+                        "Location: /\n\n"));
+                if(response == NULL){
+                    *request_return = -1;
+                    return NULL;
+                }
+                strcpy(response,"HTTP/1.1 400 Bad Request\n"
+                        "Content-Type: text/html; charset=utf-8\n"
+                        "Location: /\n\n");
 			}
 		}else if(strcmp("/registration\0", HTTP_ex.URL)==0){
 			char login[MAX_LENGTH];
 			char name[MAX_LENGTH];
 			char password[MAX_LENGTH];
-            puts("Not continue insert_field ");
+/////////////////////////////////////////////////////////////////////////////
+            printf("insert_field ");
+/////////////////////////////////////////////////////////////////////////////
 			if(((insert_field(buffer, "login=", login))!=0)||
 				((insert_field(buffer, "username=", name))!=0)||
 				(insert_field(buffer, "password=", password)!=0)){
-				response = malloc(strsize("HTTP/1.1 303 See Other\n"
-						"Content-Type: text/html; charset=utf-8\n"
-						"Location: /registration\n\n"));
-				if(response == NULL){
-					*request_return = -1;
-					return NULL;
-				}
-				strcpy(response,"HTTP/1.1 303 See Other\n"
-						"Content-Type: text/html; charset=utf-8\n"
-						"Location: /registration\n\n");
-				error_handler(buffer, "insert_field /registration",
-						*request_return, err);
+                response = malloc(strsize("HTTP/1.1 400 Bad Request\n"
+                        "Content-Type: text/html; charset=utf-8\n"
+                        "Location: /registration\n\n"));
+                if(response == NULL){
+                    *request_return = -1;
+                    return NULL;
+                }
+                strcpy(response,"HTTP/1.1 400 Bad Request\n"
+                        "Content-Type: text/html; charset=utf-8\n"
+                        "Location: /registration\n\n");
                 return response;
 			}
-            puts("Continue insert_field ");
-			if(insert_account(login, name, password, IP)==0){
-                puts("Yes");
-				response = malloc(strsize("HTTP/1.1 303 See Other\n"
-					"Content-Type: text/html; charset=utf-8\n"
-					"Location: /rooms\n\n"));
-				if(response == NULL){
-					*request_return =-1;
-					return NULL;
-				}
-			   	strcpy(response,"HTTP/1.1 303 See Other\n"
-					"Content-Type: text/html; charset=utf-8\n"
-					"Location: /rooms\n\n");
+/////////////////////////////////////////////////////////////////////////////
+            printf("insert_account ");
+/////////////////////////////////////////////////////////////////////////////
+			passed=insert_account(login, name, password, IP);
+            if(passed==0){
+                response = malloc(strsize("HTTP/1.1 303 See Other\n"
+                        "Content-Type: text/html; charset=utf-8\n"
+                        "Location: /rooms\n\n"));
+                if(response == NULL){
+                    *request_return = -1;
+                    return NULL;
+                }
+                strcpy(response, "HTTP/1.1 303 See Other\n"
+                        "Content-Type: text/html; charset=utf-8\n"
+                        "Location: /rooms\n\n");
 			}else{
-                puts("No");
-				response = malloc(strsize("HTTP/1.1 303 See Other\n"
-						"Content-Type: text/html; charset=utf-8\n"
-						"Location: /registration\n\n"));
-				if(response == NULL){
-					*request_return =-1;
-					return NULL;
-				}
-				strcpy(response,"HTTP/1.1 303 See Other\n"
-						"Content-Type: text/html; charset=utf-8\n"
-						"Location: /registration\n\n");
+                if(passed==-1){
+                    puts("Login in base");
+                }else if(passed==-2){
+                    puts("Name in base"); 
+                }else if(passed==-4){
+                    puts("Problem with insert base"); 
+                }
+                response = malloc(strsize("HTTP/1.1 205 Reset Content\n"
+                        "Content-Type: text/html; charset=utf-8\n"
+                        "Location: /registration\n\n"));
+                if(response == NULL){
+                    *request_return = -1;
+                    return NULL;
+                }
+                strcpy(response, "HTTP/1.1 205 Reset Content\n"
+                        "Content-Type: text/html; charset=utf-8\n"
+                        "Location: /registration\n\n");
 			}
 		}else if(strcmp("/rooms\0", HTTP_ex.URL)==0){
 			char name_room[MAX_LENGTH];
+/////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////////////
 			if(insert_field(buffer, "room=", name_room)==0){
 				response = malloc(strsize("HTTP/1.1 303 See Other\n"
 						"Content-Type: text/html; charset=utf-8\n"
@@ -1311,6 +1517,7 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
                 "<html><body><h1>WHATS METHOD!?</h1></body></html>");
 		return response;
 	}
+    printf("\n");
 	*request_return = 0;
 	return response;
 }
@@ -1355,25 +1562,31 @@ int main(void){
 	int result_handle=0;
 	char *exit_handler;
 	Error err;
-	while(result_handle!=-10){
+	while(result_handle!=-1000){
 		client_socket = accept(server_socket, (struct sockaddr*)&client_addr,
 			   	&addr_len);
 		if (client_socket<0){
 			perror("Accept failed");
 			return 1;
 		}
+        puts("/////////////////////////////////////////////////////////");
 		read(client_socket, buffer, sizeof(buffer));
 		buffer[strlen(buffer)]='\0';
         strcpy(IP_main ,inet_ntoa(client_addr.sin_addr));
-	///////////////////////////////////////////////////////////////////////////////////
 		exit_handler = handle_request(buffer, IP_main, &result_handle, &err);
-		printf("Exit buffer = OK\n", exit_handler);
-
         if(exit_handler == NULL){
-	///////////////////////////////////////////////////////////////////////////////////
-			result_handle =-10;
+			result_handle =-1000;
 		}else{
-	///////////////////////////////////////////////////////////////////////////////////
+            puts("Accounts:");
+            for(size_t i=0;i<num_users;i++){
+                printf("\tUser %llu:\n%s\n%s\n%s\n%s\n\n",
+                        i,
+                        users[i].login,
+                        users[i].name,
+                        users[i].password,
+                        users[i].IP);
+            }
+            puts("\n\n");
 			write(client_socket,exit_handler,strlen(exit_handler)+1);
 		}
 		free(exit_handler);
