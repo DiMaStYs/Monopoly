@@ -3,21 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Комнаты</title>
+	<title>Rooms</title>
 </head>
 <body>
-  <h2><!-- INSERT_THIS_USER --><h2>
-  <a href="create_room">Создать комнату</a>
-  <h1>Комнаты:</h1>
+  <h1>Rooms:</h1>
   <form action="/rooms" method="post">
-    <label for="room">Комната:</label>
-
+    <label for="room">Room:</label>
     <select id="room" name="room">	
       <!-- INSERT_ROOMS -->
     </select>
-
-    <input type="submit" value="Присоединиться">
+    <input type="submit" value="Connect">
   </form>
+  <br><br><br>
+  <h2>User:<!-- INSERT_THIS_USER --></h2>
+  <button onclick="window.location.href='/create_room'">Create room</button>
 </body>
 </html>
 

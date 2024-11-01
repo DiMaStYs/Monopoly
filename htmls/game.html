@@ -3,22 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Форма для перевода</title>
+	<title>Form for transfer</title>
 </head>
 <body>
-    <h1>Переводы</h1>
-	<h2>Твоя сумма: <!--INSERT_MONEY_USER--></h2>
+    <h1>Transfer</h1>
+	<h2>Your money: <!-- INSERT_MONEY_USER --></h2>
     <form method="post">
-        <label for="name_select">Кому перевести:</label>
-		
+        <label for="name_select">Name select:</label>
 		    <select id="name_select" name="name_select">
 				 <!-- INSERT_USERS -->
 		    </select>
 		    <br><br>
-		    <label for="money">Сумма для передачи:</label>
+		    <label for="money">Summ for transfer:</label>
 		    <input type="money" id="money" name="number">
 		    <input type="submit" value="Перевести">
     </form>
+  	<button onclick="window.location.href='history'">History this room</button>
 </body>
 </html>
 
