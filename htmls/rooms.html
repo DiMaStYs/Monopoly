@@ -6,8 +6,6 @@
 	<title>Rooms</title>
 </head>
 <body>
-  <h2>User:<!-- INSERT_THIS_USER --></h2>
-  <button onclick="window.location.href='/profile'">Create room</button>
   <h1>Rooms:</h1>
   <form action="/rooms" method="post">
     <label for="room">Room:</label>
@@ -17,6 +15,8 @@
     <input type="submit" value="Connect">
   </form>
   <br><br><br>
+  <h2>User:<!-- INSERT_THIS_USER --></h2>
+  <button onclick="window.location.href='/create_room'">Create room</button>
 </body>
 </html>
 
