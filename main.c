@@ -264,6 +264,10 @@ int s_user_login_users(char * login_user, size_t * id_user){
         *id_user = 0;
         return 3;
     }
+    if(strcmp(users[0].login, login_user)>0){
+        *id_user = 0;
+        return 0;
+    }
 	size_t low=0;
 	size_t high=num_users-1;
 	size_t mid=low;
@@ -277,18 +281,10 @@ int s_user_login_users(char * login_user, size_t * id_user){
 		}else if (cmp < 0){
 			low = mid + 1;
 		}else{
-			if(high==0){
-                *id_user = 0;
-				return 1;
-			}
 			high = mid - 1;
 		}
 	}
-    if(cmp<0){
-        *id_user=low;
-    }else{
-        *id_user=high;
-    }
+    *id_user = low;
 	return 2;
 }
 //correct////////////////////////////////////////////
@@ -304,35 +300,33 @@ int s_user_IP_users(char * user_IP, size_t *id_user){
 	size_t mid=low;
 	size_t high=num_IPs - 1;
 	int cmp=0;
-	while(low<=high){
-		mid = low + (high - low) / 2;
-		cmp = strcmp(IPs[mid].IP, user_IP);
-		if(cmp == 0){
-			low = high+1;
-		}else if(cmp<0){
-			low = mid + 1;
-		}else{
-			if(high==0){
-				break;
-			}else{
-				high = mid - 1;
-			}
-		}
-	}
-	if(cmp<0){
-        *id_user = low;
-        return 1; //index IP in IPs
-    }else if(cmp>0){
-        *id_user = high;
-        return 1; //index IP in IPs
-	}else{
-        passed = s_user_login_users(IPs[mid].login, &low);
-        if(passed!=0){
-            *id_user = mid;     //index user in users
-            return -(1*passed);
+    if(strcmp(IPs[0].IP, user_IP)>0){
+        *id_user = 0;
+        return 1;    
+    }else{
+        while(low<=high){
+            mid = low + (high - low) / 2;
+            cmp = strcmp(IPs[mid].IP, user_IP);
+            if(cmp == 0){
+                low = high+1;
+            }else if(cmp<0){
+                low = mid + 1;
+            }else{
+                high = mid - 1;
+            }
         }
-        *id_user = low;
-        return 0;
+        if(cmp!=0){
+            *id_user = low;
+            return 1; //index IP in IPs
+        }else{
+            passed = s_user_login_users(IPs[mid].login, &low);
+            if(passed!=0){
+                *id_user = mid;     //index user in users
+                return -(1*passed);
+            }
+            *id_user = low;
+            return 0;
+        }
     }
 }
 
@@ -346,6 +340,10 @@ int s_user_name_users(char * name_user, size_t *id_user){
 	size_t mid = low;
 	size_t high = num_users - 1;
 	int cmp=0;
+    if(strcmp(names[0].name, name_user)>0){
+        *id_user = 0;
+        return 1;
+    }
 	while(low<=high){
 		mid = low + (high - low) / 2;
 		cmp = strcmp(names[mid].name, name_user);
@@ -354,18 +352,11 @@ int s_user_name_users(char * name_user, size_t *id_user){
 		}else if(cmp<0){
 			low = mid + 1;
 		}else{
-			if(high ==0){
-				break;
-			}else{
-				high = mid - 1;
-			}
+            high = mid - 1;
 		}
 	}
-	if(cmp<0){
+	if(cmp!=0){
 		*id_user = low;     //index Name in names
-        return 1;
-	}else if(cmp>0){
-        *id_user = high;     //index Name in names
         return 1;
     }
 	passed = s_user_login_users(names[mid].login, &high);
@@ -386,6 +377,10 @@ int s_room_name_rooms(char *name_room, size_t *id_room){
 	size_t high=num_rooms-1;
 	size_t mid=low;
 	int cmp=0;
+    if(strcmp(rooms[0].name_room, name_room)>0){
+        *id_room = 0;
+        return 1;
+    }
 	while (low <= high){
 		mid = low + (high - low) / 2;
 		cmp = strcmp(rooms[mid].name_room, name_room);
@@ -395,20 +390,11 @@ int s_room_name_rooms(char *name_room, size_t *id_room){
 		}else if (cmp < 0){
 			low = mid + 1;
 		}else{
-			if(high==0){
-                *id_room = 0;
-				return 1;
-			}
 			high = mid - 1;
 		}
 	}
-    if(cmp<0){
-        *id_room = low;
-        return 1;
-    }else{
-        *id_room = high;
-        return 1; //index IP in IPs
-    }
+    *id_room = low;
+    return 1;
 }
 
 int s_user_name_room(char *name_user, char *name_room, size_t *id_user){
@@ -426,6 +412,10 @@ int s_user_name_room(char *name_user, char *name_room, size_t *id_user){
     size_t high=num_rooms-1;
     size_t mid=0;
     int cmp=0;
+    if(strcmp(rooms[id_room].user[0].name, name_user)>0){
+        *id_user = 0;
+        return 1;
+    }
     while(low<=high){
         mid = low +(high-low)/2;
         cmp = strcmp(rooms[id_room].user[mid].name, name_user);
@@ -435,21 +425,11 @@ int s_user_name_room(char *name_user, char *name_room, size_t *id_user){
         }else if(cmp<0){
             low = mid+1;
         }else{
-            if(high == 0){
-                *id_user=0;
-                return 1;
-            }else{
-                high = mid-1;
-            }
+            high = mid-1;
         }
     }
-	if(cmp<0){
-        *id_user = low;
-        return 3; //index IP in IPs
-    }else{
-        *id_user = high;
-        return 3; //index IP in IPs
-    }
+    *id_user = low;
+    return 3; //index IP in IPs
 }    
 
 int create_room(char * buffer_name){
@@ -507,20 +487,17 @@ int insert_base(char *login, char *name, char *password, char *IP){
     int passed = 0;
 	size_t k[3];
 	if((num_users == 0)&&(num_users + 1 <= MAX_USERS)){
-		k[0]=0;
-		k[1]=0;
-		k[2]=0;
-		strcpy(users[k[0]].login, login);
-		strcpy(users[k[0]].name, name);
-		strcpy(users[k[0]].password, password);
-		strcpy(users[k[0]].IP, IP);
+		strcpy(users[0].login, login);
+		strcpy(users[0].name, name);
+		strcpy(users[0].password, password);
+		strcpy(users[0].IP, IP);
 
 
-		strcpy(names[k[1]].name, name);
-		strcpy(names[k[1]].login, login);
+		strcpy(names[0].name, name);
+		strcpy(names[0].login, login);
 
-		strcpy(IPs[k[2]].login, login);
-		strcpy(IPs[k[2]].IP, IP);
+		strcpy(IPs[0].login, login);
+		strcpy(IPs[0].IP, IP);
         num_IPs +=1;
 		num_users += 1;
 	}else{
@@ -2114,7 +2091,9 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
                 passed = s_user_IP_users(IP, &id_user);
                 if(passed!=0){
                     *request_return = 2;
-                    sprintf( explanation, "/ s_user_IP_users = %d", passed);
+                    sprintf( explanation, "/ s_user_IP_users = %d, IP = %s"
+                            " he sad = %lu",
+                            passed, IP, id_user);
                     response = error_handler(buffer, explanation, 
                             *request_return, err, &passed);
                     if(response == NULL){
@@ -2372,6 +2351,10 @@ int print_user(void){
         room = rooms[i];
         printf("(%lu)Name %s:\n\tUsers_names: %s\n\tCounter_users: %lu\n",
                 i,room.name_room, room.users_names, room.counter_users);
+        for(size_t j=0;j<room.counter_users;j++){
+            printf("\t\t(%lu)User %s: \n\t\t\tName =%s\n\t\t\tBalanse = %lu\n",
+                    j, room.user[j].login, room.user[j].name,
+                    room.user[j].balance);
     }
 }
 
