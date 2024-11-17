@@ -13,6 +13,7 @@
 
 #define strsize(args...) snprintf(NULL, 0, args) + sizeof('\0')
 #define PORT 8000
+#define MAX_IPs 8
 #define MAX_REQUEST 8
 #define MAX_COUNT_HISTORY 20
 #define MAX_USERS 100
@@ -109,6 +110,41 @@ size_t num_rooms = 0;
 size_t num_IPs = 0;
 struct stat st = {0};
 
+int print_user(void){
+    puts("\nUsers:");
+    User u;
+    for(size_t i=0;i<num_users;i++){
+        u = users[i];
+        printf("User %lu:\n\tLogin: %s\n\tName: %s\n\tPassword: %s\n\tIP: %s\n",
+                i, u.login, u.name, u.password, u.IP);
+    }
+    puts("\nName:");
+    Name n;
+    for(size_t i=0;i<num_users;i++){
+        n = names[i];
+        printf("User %lu:\n\tName: %s\n\tLogin: %s\n",
+                i, n.name, n.login);
+    }
+    puts("\nIPs:");
+    IP ip;
+    for(size_t i=0;i<num_IPs;i++){
+        ip = IPs[i];
+        printf("User %lu:\n\tIP: %s\n\tLogin: %s\n",
+                i, ip.IP, ip.login);
+    }
+    puts("\nRooms:");
+    Room room;
+    for(size_t i=0;i<num_rooms;i++){
+        room = rooms[i];
+        printf("(%lu)Name %s:\n\tUsers_names: %s\n\tCounter_users: %lu\n",
+                i,room.name_room, room.users_names, room.counter_users);
+        for(size_t j=0;j<room.counter_users;j++){
+            printf("\t\t(%lu)User %s: \n\t\t\tName =%s\n\t\t\tBalanse = %lu\n",
+                    j, room.user[j].login, room.user[j].name,
+                    room.user[j].balance);
+        }
+    }
+}
 
 int insert_string(char * file_string, char * search_string, char * inserting_string, char * result, size_t result_size){
 	size_t len_search = strlen(search_string);
@@ -266,7 +302,7 @@ int s_user_login_users(char * login_user, size_t * id_user){
     }
     if(strcmp(users[0].login, login_user)>0){
         *id_user = 0;
-        return 0;
+        return 1;
     }
 	size_t low=0;
 	size_t high=num_users-1;
@@ -502,6 +538,8 @@ int insert_base(char *login, char *name, char *password, char *IP){
 		num_users += 1;
 	}else{
 		help_insert_base(login, name, IP, k);
+        num_IPs +=1;
+        num_users += 1;
         for(size_t i= num_users; i>k[0]; i--){
             users[i] = users[i-1];
         }
@@ -527,8 +565,6 @@ int insert_base(char *login, char *name, char *password, char *IP){
         strcpy(names[k[1]].login, name);
         
 
-        num_IPs +=1;
-        num_users += 1;
 	}
 	return 0;
 }
@@ -1637,9 +1673,9 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
     information_for_html[1]=0;
     information_for_html[2]=0;
     
-    if(!((strcmp(HTTP_ex.URL, "/registration\0")!=0)&&
-            (strcmp(HTTP_ex.URL, "/\0")!=0))||
-        (s_user_IP_users(IP, &passeduns)!=0)){
+    if(!((strcmp(HTTP_ex.URL, "/registration\0")==0)||
+            (strcmp(HTTP_ex.URL, "/\0")==0))&&
+        !(s_user_IP_users(IP, &passeduns)==0)){
         response = malloc(strsize("HTTP/1.1 303 See Other\r\n"
                 "Content-Type: text/html; charset=utf-8\r\n"
                 "Location: /registration\n\n")+1);
@@ -1650,6 +1686,7 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
         strcpy(response, "HTTP/1.1 303 See Other\r\n"
             "Content-Type: text/html; charset=utf-8\r\n"
                 "Location: /registration\n\n");
+        return response;
     }
 //CREATE ANSWER
 	if(strcmp(HTTP_ex.Method,"GET\0")==0){
@@ -1980,25 +2017,51 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 //POST
 		if((strcmp("/\0", HTTP_ex.URL)==0)||(strcmp("/login\0", HTTP_ex.URL)==0)){
 			size_t index_user;
-			char buffer_login[MAX_LENGTH];
-			char buffer_password[MAX_LENGTH];
-			passed=insert_field(buffer, "login=", buffer_login);
+			char login[MAX_LENGTH];
+			char password[MAX_LENGTH];
+			passed=insert_field(buffer, "login=", login);
             if(passed==0){
-                passed=insert_field(buffer, "password=", buffer_password);
+                passed=insert_field(buffer, "password=", password);
 				if(passed==0){
-					passed = s_user_login_users(buffer_login, &index_user);
+					passed = s_user_login_users(login, &index_user);
                     if(passed==0){
-                        if(strcmp(users[index_user].password,buffer_password)==0){
+                        if(strcmp(users[index_user].password,password)==0){
                             size_t id_f_search;
+                            char old_IP[MAX_LENGTH];
                             passed = s_user_IP_users(IP, &id_f_search);
-                            if(passed == 1){
-                                for(size_t i=num_IPs; i>id_f_search;i--){
-                                    IPs[i] = IPs[i-1];
+                            if(passed>=1){
+                                //if user not in base
+                                if(num_IPs+1<=MAX_IPs){
+                                    num_IPs+=1;
+                                }else{
+                                    *request_return = 2;
+                                    passed = -1;
+                                    sprintf(explanation,
+                                            "MAX_IPs < %lu /registration", num_IPs);
+                                    response = error_handler(buffer, explanation, 
+                                            *request_return, err, &passed);
+                                    if(response == NULL){
+                                        *request_return = -1000;
+                                        return NULL;
+                                    }
+                                    if(passed < 0){
+                                        *request_return = -(*request_return);
+                                    }
+                                    return response;
                                 }
-                                strcpy(IPs[id_f_search].login, buffer_login);
+                                for(size_t i=num_IPs;i>id_f_search;i--){
+                                    IPs[i]=IPs[i-1];
+                                }
                                 strcpy(IPs[id_f_search].IP, IP);
-                            }else if(passed == -1){
-                                strcpy(IPs[id_f_search].login, buffer_login); 
+                                strcpy(IPs[id_f_search].login, login);
+                                strcpy(old_IP, users[index_user].IP);
+                                strcpy(users[index_user].IP, IP);
+                                passed = s_user_IP_users(IP, &id_f_search);
+                                IPs[id_f_search].login[0]='\0';
+                            }else if(passed<0){
+                                //user in base
+                                strcpy(IPs[id_f_search].login, login);
+                                strcpy(users[index_user].IP, IP);
                             }
                             response = malloc(strsize("HTTP/1.1 303 See Other\r\n"
                                     "Content-Type: text/html; charset=utf-8\r\n"
@@ -2020,6 +2083,7 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
                                 *request_return = -1000;
                                 return NULL;
                             }
+                            *request_return = 1;
                             strcpy(response, "HTTP/1.1 205 Reset Content\r\n"
                                     "Content-Type: text/html; charset=utf-8\r\n"
                                     "Location: /\n\n");
@@ -2032,12 +2096,13 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
                             *request_return = -1000;
                             return NULL;
                         }
+                        *request_return = 2;
                         strcpy(response, "HTTP/1.1 205 Reset Content\r\n"
                                 "Content-Type: text/html; charset=utf-8\r\n"
                                 "Location: /\n\n");
                    }
 				}else{
-                    *request_return = 1;
+                    *request_return = 3;
                     sprintf(explanation, "/ not found password = %d",*request_return);
                     response = error_handler(buffer, explanation, 
                             *request_return, err, &passed);
@@ -2051,7 +2116,7 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
                     return response;
 				}
 			}else{
-                *request_return = 2;
+                *request_return = 4;
                 sprintf(explanation, "/ not found login = %d",*request_return);
                 response = error_handler(buffer, explanation, 
                         *request_return, err, &passed);
@@ -2085,57 +2150,57 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
                 }
                 return response;
 			}
-			passed=insert_account(login, name, password, IP);
-            if(passed==0){
-                size_t id_user;
-                passed = s_user_IP_users(IP, &id_user);
-                if(passed!=0){
-                    *request_return = 2;
-                    sprintf( explanation, "/ s_user_IP_users = %d, IP = %s"
-                            " he sad = %lu",
-                            passed, IP, id_user);
-                    response = error_handler(buffer, explanation, 
-                            *request_return, err, &passed);
+            size_t id_user;
+            passed = s_user_IP_users(IP, &id_user);
+            if((passed>=0)||(strcmp(IPs[id_user].login, "\0")==0)){
+                passed=insert_account(login, name, password, IP);
+                if(passed==0){
+                    response = malloc(strsize("HTTP/1.1 303 See Other\r\n"
+                            "Content-Type: text/html; charset=utf-8\r\n"
+                            "Location: /profile/%s\n\n",
+                            users[id_user].name));
                     if(response == NULL){
                         *request_return = -1000;
                         return NULL;
                     }
-                    if(passed < 0){
-                        *request_return = -(*request_return);
+                    sprintf(response, "HTTP/1.1 303 See Other\r\n"
+                            "Content-Type: text/html; charset=utf-8\r\n"
+                            "Location: /profile/%s\n\n",
+                            users[id_user].name);
+                }else{
+                    if(passed==-1){
+                        puts("Login in base");
+                    }else if(passed==-2){
+                        puts("Name in base"); 
+                    }else if(passed==-4){
+                        puts("Problem with insert base"); 
                     }
-                    return response;
-                } 
-                response = malloc(strsize("HTTP/1.1 303 See Other\r\n"
-                        "Content-Type: text/html; charset=utf-8\r\n"
-                        "Location: /profile/%s\n\n",
-                        users[id_user].name));
+                    response = malloc(strsize("HTTP/1.1 205 Reset Content\r\n"
+                            "Content-Type: text/html; charset=utf-8\r\n"
+                            "Location: /registration\n\n"));
+                    if(response == NULL){
+                        *request_return = -1000;
+                        return NULL;
+                    }
+                    *request_return = 1;
+                    strcpy(response, "HTTP/1.1 205 Reset Content\r\n"
+                            "Content-Type: text/html; charset=utf-8\r\n"
+                            "Location: /registration\n\n");
+                }
+            }else{ 
+                *request_return = 2;
+                sprintf(explanation, "/rooms s_user_IP_users = %d",passed);
+                response = error_handler(buffer, explanation, 
+                        *request_return, err, &passed);
                 if(response == NULL){
                     *request_return = -1000;
                     return NULL;
                 }
-                sprintf(response, "HTTP/1.1 303 See Other\r\n"
-                        "Content-Type: text/html; charset=utf-8\r\n"
-                        "Location: /profile/%s\n\n",
-                        users[id_user].name);
-			}else{
-                if(passed==-1){
-                    puts("Login in base");
-                }else if(passed==-2){
-                    puts("Name in base"); 
-                }else if(passed==-4){
-                    puts("Problem with insert base"); 
+                if(passed < 0){
+                    *request_return = -(*request_return);
                 }
-                response = malloc(strsize("HTTP/1.1 205 Reset Content\r\n"
-                        "Content-Type: text/html; charset=utf-8\r\n"
-                        "Location: /registration\n\n"));
-                if(response == NULL){
-                    *request_return = -1000;
-                    return NULL;
-                }
-                strcpy(response, "HTTP/1.1 205 Reset Content\r\n"
-                        "Content-Type: text/html; charset=utf-8\r\n"
-                        "Location: /registration\n\n");
-			}
+                return response;
+            }
 		}else if(strcmp("/rooms\0", HTTP_ex.URL)==0){
 			char name_room[MAX_LENGTH];
 			if(insert_field(buffer, "room=", name_room)==0){
@@ -2323,40 +2388,6 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 }
 
 
-int print_user(void){
-    puts("\nUsers:");
-    User u;
-    for(size_t i=0;i<num_users;i++){
-        u = users[i];
-        printf("User %lu:\n\tLogin: %s\n\tName: %s\n\tPassword: %s\n\tIP: %s\n",
-                i, u.login, u.name, u.password, u.IP);
-    }
-    puts("\nName:");
-    Name n;
-    for(size_t i=0;i<num_users;i++){
-        n = names[i];
-        printf("User %lu:\n\tName: %s\n\tLogin: %s\n",
-                i, n.name, n.login);
-    }
-    puts("\nIPs:");
-    IP ip;
-    for(size_t i=0;i<num_users;i++){
-        ip = IPs[i];
-        printf("User %lu:\n\tIP: %s\n\tLogin: %s\n",
-                i, ip.IP, ip.login);
-    }
-    puts("\nRooms:");
-    Room room;
-    for(size_t i=0;i<num_rooms;i++){
-        room = rooms[i];
-        printf("(%lu)Name %s:\n\tUsers_names: %s\n\tCounter_users: %lu\n",
-                i,room.name_room, room.users_names, room.counter_users);
-        for(size_t j=0;j<room.counter_users;j++){
-            printf("\t\t(%lu)User %s: \n\t\t\tName =%s\n\t\t\tBalanse = %lu\n",
-                    j, room.user[j].login, room.user[j].name,
-                    room.user[j].balance);
-    }
-}
 
 int main(void){
 	getcwd(now_pwd_dirrectory, MAX_LENGTH_PWD);
@@ -2388,9 +2419,11 @@ int main(void){
     insert_account("admin", "admin", "Dimontys","192.168.3.100");
 	char IP_main[10];
 	char buffer[3024];
-    size_t passed=0;
+    size_t passeduns=0;
+    int passed = 0;
 	int result_handle=0;
 	char *exit_handler;
+    char *response;
 	Error err;
 	while(result_handle!=-1000){
 		client_socket = accept(server_socket, (struct sockaddr*)&client_addr,
@@ -2401,16 +2434,35 @@ int main(void){
 		}
         result_handle = 0;
         puts("/////////////////////////////////////////////////////////");
-		passed=read(client_socket, buffer, 3024);
-		buffer[passed]='\0';
+		passeduns=read(client_socket, buffer, 3024);
+		buffer[passeduns]='\0';
         strcpy(IP_main ,inet_ntoa(client_addr.sin_addr));
 		exit_handler = handle_request(buffer, IP_main, &result_handle, &err);
-        //cut this
-        print_user();
-        //cut this
         if(exit_handler == NULL){
 			result_handle =-1000;
 		}else{
+            char pwd_request[MAX_LENGTH_PWD];
+            sprintf(pwd_request,"%s/%s",now_pwd_dirrectory,"buffer.txt");
+            FILE *html_file = fopen(pwd_request,"a");
+            if(html_file==NULL){
+                result_handle =-100;
+                response = error_handler(buffer, "Not open buffer.txt", 
+                        result_handle, &err, &passed);
+                if(response == NULL){
+                    result_handle = -1000;
+                    return result_handle;
+                }
+                if(passed < 0){
+                    result_handle = -(result_handle);
+                }
+                return result_handle;
+            }
+            fprintf(html_file,"\n\nAnswer = %d :\n%s",result_handle, 
+                    exit_handler);
+            fclose(html_file);
+                                //cut this
+                                print_user();
+                                //cut this
             puts(" ");
 			write(client_socket,exit_handler,strlen(exit_handler)+1);
 		    free(exit_handler);
