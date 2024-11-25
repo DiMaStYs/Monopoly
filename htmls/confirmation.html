@@ -6,8 +6,13 @@
 	<title>Form for transfer</title>
 </head>
 <body>
-	<h8><!-- USER_SELECT --><!-- MONEY_COAST --></h8><br>
-	<button onclick="window.location.href='../'">Room</button>
+  <form method="post" accept_charset="UTF-8">
+    <label for="money">How many coins do you need</label><br>
+    <input type="text" id="money" name="money" required><br><br>
+    <input type="submit" value="Send">
+  </form>
+	<h8>Last user: <!-- USER_SELECT --> --> <!-- MONEY_COAST --></h8><br>
+	<button onclick="history.back()">Room</button>
 </body>
 </html>
 
