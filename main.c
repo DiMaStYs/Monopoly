@@ -10,6 +10,7 @@
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 
 #define strsize(args...) snprintf(NULL, 0, args) + sizeof('\0')
 #define PORT 8000
@@ -47,6 +48,7 @@ typedef struct{
 }HTTP_Context;
 
 typedef struct{
+    char typ;
 	char user2[MAX_LENGTH];
     char room[MAX_LENGTH];
 	size_t money;
@@ -539,7 +541,7 @@ int create_room(char * buffer_name){
                 perror("Error opening file");
                 return -4;
             }
-            fputs("",file);
+            fputs("\0",file);
             fclose(file);
             for(size_t i = num_rooms;i>id_room;i--){
                 rooms[i] = rooms[i-1];
@@ -813,6 +815,124 @@ char * error_handler(char * buffer, char * explanation, int error, Error * err, 
 	}
 }
 
+int give_money(char *name_user0, char *name_user1, char *room, size_t money){
+    int passed = 0;
+    size_t id_room;
+    passed = s_room_name_rooms(room, &id_room);
+    if(passed !=0){
+        return -5;
+    }
+    if(strcmp(name_user0, "bank\0")==0){//id bank --> name_user1
+
+        size_t id_user1_r, id_user1;
+        passed = s_user_name_users(name_user1, &id_user1);
+        if(passed !=0){
+            return -2;
+        }
+        passed = s_user_name_room(name_user1, room, &id_user1_r);
+        if(passed !=0){
+            return -4;
+        }
+        if(money+rooms[id_room].user[id_user1_r].balance<money){
+            return 2;
+        }
+        //information user in rooms
+        rooms[id_room].user[id_user1_r].balance+=money;
+
+        //information lastoperation in users
+        users[id_user1].lastoperation.money=money;
+        strcpy(users[id_user1].lastoperation.room, rooms[id_room].name_room);
+        strcpy(users[id_user1].lastoperation.user2, "bank");
+        users[id_user1].lastoperation.typ = 'G';//get
+    }else if(strcmp(name_user1, "bank\0")==0){//id name_user1 --> bank
+        size_t id_user0_r, id_user0;
+        passed = s_user_name_users(name_user0, &id_user0);
+        if(passed !=0){
+            return -1;
+        }
+        passed = s_user_name_room(name_user0, room, &id_user0_r);
+        if(passed !=0){
+            return -3;
+        }
+        if(money>rooms[id_room].user[id_user0_r].balance){
+            return 1;
+        }
+
+        //information user in rooms
+        rooms[id_room].user[id_user0_r].balance-=money;
+
+        //information lastoperation in users
+        users[id_user0].lastoperation.money=money;
+        strcpy(users[id_user0].lastoperation.room, rooms[id_room].name_room);
+        strcpy(users[id_user0].lastoperation.user2, "bank");
+        users[id_user0].lastoperation.typ = 'P';//post
+    }else{
+        size_t id_user0_r, id_user0;
+        size_t id_user1_r, id_user1;
+        passed = s_user_name_users(name_user0, &id_user0);
+        if(passed !=0){
+            return -1;
+        }
+        passed = s_user_name_users(name_user1, &id_user1);
+        if(passed !=0){
+            return -2;
+        }
+        passed = s_user_name_room(name_user0, room, &id_user0_r);
+        if(passed !=0){
+            return -3;
+        }
+        passed = s_user_name_room(name_user1, room, &id_user1_r);
+        if(passed !=0){
+            return -4;
+        }
+        if(money>rooms[id_room].user[id_user0_r].balance){
+            return 1;
+        }
+        if(money+rooms[id_room].user[id_user1_r].balance<money){
+            return 2;
+        }
+        
+        //information user in rooms
+        rooms[id_room].user[id_user0_r].balance-=money;
+        rooms[id_room].user[id_user1_r].balance+=money;
+
+        //information lastoperation in users
+        users[id_user0].lastoperation.money=money;
+        strcpy(users[id_user0].lastoperation.room, rooms[id_room].name_room);
+        strcpy(users[id_user0].lastoperation.user2, name_user1);
+        users[id_user0].lastoperation.typ = 'P';//post
+
+        users[id_user1].lastoperation.money=money;
+        strcpy(users[id_user1].lastoperation.room, rooms[id_room].name_room);
+        strcpy(users[id_user1].lastoperation.user2, name_user0);
+        users[id_user1].lastoperation.typ = 'G';//get
+    }
+
+    char s_money[strsize("%lu", money)];
+    char s_money_result[sizeof(s_money)+((sizeof(s_money)-1)/3)];
+    s_money_result[0]='\0';
+    sprintf(s_money, "%lu", money);
+    size_t size_s_money = strlen(s_money);
+    for(size_t i = size_s_money-1;i>3;i-=3){
+        sprintf(s_money_result,"%c%c%c %s",
+                s_money[i],s_money[i-1],s_money[i-2], s_money_result);
+    }
+    
+
+
+
+    char pwd_request[MAX_LENGTH_PWD];
+    sprintf(pwd_request,"%s/rooms/%s",
+            now_pwd_dirrectory,rooms[id_room].name_room);
+    FILE *html_file = fopen(pwd_request,"a");
+    if(html_file==NULL){
+        return -6;
+    }
+    fprintf(html_file,"%s <-- %s %lu\n\n", name_user1, name_user0, money);
+    fclose(html_file);
+    return 0;
+}
+
 int decision_processing(char * user_request, char * name_room, char * user_answer){
     int passed = 0;
     size_t id_room;
@@ -892,7 +1012,7 @@ int create_processing(char * name_user, char * name_room, size_t money){
         if(html_file==NULL){
             return -5;
         }
-        fprintf(html_file,"%s <-- bank\n%lu\n\n",users[id_user].name,money);
+        fprintf(html_file,"%s <-- bank %lu\n\n",users[id_user].name,money);
         fclose(html_file);
 
         r->user[0].balance += money;
@@ -997,61 +1117,62 @@ int connect_room(char *name, char *name_room){
 }
 //new function
 char * send_history(size_t id_room, int * request_return){
-    char *buffer;
+    char *request;
     int passed=0;
     char url_room[MAX_LENGTH_PWD];
     if((num_rooms==0)||(id_room>=num_rooms)){
         *request_return = -1;
-        buffer = malloc(1);
-        if(buffer==NULL){
+        request = malloc(1);
+        if(request==NULL){
             return NULL;
         }
-        *buffer = '\0';
-        return buffer;
+        *request = '\0';
+        return request;
     }
     sprintf(url_room, "./rooms/%s", rooms[id_room].name_room);
-    size_t buffer_size = correct_size(url_room)+
-        rooms[id_room].counter_request*5;
-    if(buffer_size == 0){
-        *request_return = -2;
-        buffer = malloc(1);
-        if(buffer==NULL){
-            return NULL;
-        }
-        *buffer = '\0';
-        return buffer;
-    }
-    buffer=malloc(buffer_size);
-    if(buffer==NULL){
-        *request_return = -3;
-        buffer = malloc(1);
-        if(buffer==NULL){
-            return NULL;
-        }
-        *buffer = '\0';
-        return buffer;
-    }
-    
-    *buffer = '\0';
-    FILE *file;
-    char s[MAX_LENGTH_PWD*2 +35];
-    file = fopen(url_room, "r");
+
+    FILE *file = fopen(url_room, "r");
     if(file==NULL){
         *request_return = -4;
-        buffer = malloc(1);
-        if(buffer==NULL){
+        request = malloc(1);
+        if(request==NULL){
+            *request_return = -1000;
             return NULL;
         }
-        *buffer = '\0';
-        return buffer;
+        *request = '\0';
+        return request;
     }
+    size_t count = 0;
+    char s[MAX_LENGTH*2 +35];       //2 names and money
+    *s='\0';
+    char lines[MAX_COUNT_HISTORY][sizeof(s)];
+    *lines[MAX_COUNT_HISTORY-1] = '\0';
 
     while(fgets(s, sizeof(s), file)!= NULL){
-        strcat(buffer, s);
-        strcat(buffer, "<br>\n");
+        strncpy(lines[count], s, sizeof(s));
+        count = (count+1) % MAX_COUNT_HISTORY;
     }
+    fclose(file);
+    request = malloc(sizeof(lines));
+    *request = '\0';
 
-    return buffer;
+    if(strlen(lines[MAX_COUNT_HISTORY-1])==0){
+        if(count==0){
+            return request;
+        }
+        for(size_t i =0; i < count; i++){
+            strcat(request , lines[i]);
+            strcat(request, "<br>\n");
+        }
+    }else{
+        for(size_t i =0; i < MAX_COUNT_HISTORY; ++i){
+            strcat(request , lines[(count+i)%MAX_COUNT_HISTORY]);
+            strcat(request, "<br>\n");
+        }
+    }
+    printf("history send = %s\n\n", request);
+
+    return request;
 }
 //new handle_html
 char * handle_html(char *buffer,char *html_doc,int *request_return, size_t *information_for_html){
@@ -1433,6 +1554,8 @@ char * handle_html(char *buffer,char *html_doc,int *request_return, size_t *info
     }else if(strcmp(html_doc,htmls[5].name_url_html)==0){
         // /rooms/&/confirmation
         size_t id_user = *information_for_html;
+        information_for_html+=1;
+        size_t id_room = *information_for_html;
         size_t buffer_size= correct_size(htmls[5].name_url_html);
         if(buffer_size==0){
             *request_return = 1; 
@@ -1450,6 +1573,7 @@ char * handle_html(char *buffer,char *html_doc,int *request_return, size_t *info
         }
         buffer_size+=MAX_LENGTH;    //for user selection
         buffer_size+=30;             //for money
+        buffer_size+=MAX_LENGTH;    //for name room
         char buffer_file[buffer_size];
         passed = send_html(htmls[5].name_url_html, buffer_file);
         if(passed!=0){
@@ -1478,17 +1602,14 @@ char * handle_html(char *buffer,char *html_doc,int *request_return, size_t *info
                 check, buffer_file, sizeof(buffer_file));
         free(check);
         check=NULL;
-        //for user select
-        check=malloc(MAX_LENGTH);
-        if(check == NULL){
-            *request_return = -1000;
-            return NULL;
-        }
-        sprintf(check,"%s", users[id_user].lastoperation.user2); 
+        //for user selection
         insert_string(buffer_file, "<!-- USER_SELECT -->",
-                check, buffer_file, sizeof(buffer_file));
-        free(check);
-        check=NULL;
+                users[id_user].lastoperation.user2,
+                buffer_file, sizeof(buffer_file));
+        //for name room
+        insert_string(buffer_file, "<!-- INSERT_ROOM -->",
+                rooms[id_room].name_room, buffer_file, sizeof(buffer_file));
+
         //////////////////////////////////////////////////
         response = malloc(buffer_size);
         if(response == NULL){
@@ -1503,6 +1624,7 @@ char * handle_html(char *buffer,char *html_doc,int *request_return, size_t *info
         information_for_html+=1;
         size_t id_room = *information_for_html; 
         size_t buffer_size= correct_size(htmls[6].name_url_html);
+
         if(buffer_size==0){
             *request_return = 1;
             strcpy(explanation, "correct_size = 0 /rooms/& ");
@@ -1534,6 +1656,7 @@ char * handle_html(char *buffer,char *html_doc,int *request_return, size_t *info
             return response;
         }
         buffer_size+=strlen(process);
+        buffer_size+=MAX_LENGTH;            //for name_room
         char buffer_file[buffer_size];
         passed = send_html(htmls[6].name_url_html, buffer_file);
         if(passed!=0){
@@ -1557,6 +1680,8 @@ char * handle_html(char *buffer,char *html_doc,int *request_return, size_t *info
                 process, buffer_file, sizeof(buffer_file));
         free(process);
         process=NULL;
+        insert_string(buffer_file, "<!-- INSERT_ROOM -->",
+                rooms[id_room].name_room, buffer_file, sizeof(buffer_file));
         response = malloc(buffer_size);
         if(response == NULL){
             *request_return = -1000;
@@ -1583,7 +1708,7 @@ char * handle_html(char *buffer,char *html_doc,int *request_return, size_t *info
             }
             return response;
         }
-        size_t buffer_size= correct_size(htmls[7].name_url_html)+strlen(check);
+        size_t buffer_size= correct_size(htmls[7].name_url_html);
         if(buffer_size==0){
             *request_return = 2;
             strcpy(explanation, "correct_size = 0 /rooms/&/history ");
@@ -1598,6 +1723,8 @@ char * handle_html(char *buffer,char *html_doc,int *request_return, size_t *info
             }
             return response;
         }
+        buffer_size+=strlen(check);
+        buffer_size+=MAX_LENGTH;        //for name_room
         char buffer_file[buffer_size];
         passed = send_html(htmls[7].name_url_html, buffer_file);
         if(passed!=0){
@@ -1619,6 +1746,8 @@ char * handle_html(char *buffer,char *html_doc,int *request_return, size_t *info
                 check, buffer_file, sizeof(buffer_file));
         free(check);
         check=NULL;
+        insert_string(buffer_file, "<!-- INSERT_ROOM -->",
+                rooms[id_room].name_room, buffer_file, sizeof(buffer_file));
         response = malloc(buffer_size);
         if(response == NULL){
             *request_return = -1000;
@@ -2028,6 +2157,7 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
                 index_symbol+=12;
                 if(*index_symbol=='\0'){
                     information_for_html[0]=index_user;
+                    information_for_html[1]=id_room;
                     response_html = handle_html(buffer, htmls[5].name_url_html,
                             request_return, information_for_html);
                     if(*request_return!=0){
@@ -2588,13 +2718,20 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
                     }
                     return response;
                 }
-                fprintf(html_file,"%s <-- %s\n%lu\n\n",
+                fprintf(html_file,"%s <-- %s %lu\n",
                         rooms[id_room].user[id_user_room_1].name,
                         rooms[id_room].user[id_user_room].name,money);
                 fclose(html_file);
 
+                strcpy(users[id_user].lastoperation.user2, s_user_1);
+                users[id_user].lastoperation.money=money;
+                strcpy(users[id_user].lastoperation.room,
+                        rooms[id_room].name_room);
+
+
                 rooms[id_room].user[id_user_room].balance-=money;
                 rooms[id_room].user[id_user_room_1].balance+=money;
+
 				response = malloc(strsize("HTTP/1.1 303 See Other\r\n"
 						"Content-Type: text/html; charset=utf-8\r\n"
 						"Location: /rooms/%s/confirmation\n\n",
@@ -2847,6 +2984,10 @@ int main(void){
 	char *exit_handler;
     char *response;
 	Error err;
+    struct timeval timeout;
+    timeout.tv_sec = 1;
+    timeout.tv_usec = 0;
+
 	while(result_handle!=-1000){
 		client_socket = accept(server_socket, (struct sockaddr*)&client_addr,
 			   	&addr_len);
@@ -2854,15 +2995,22 @@ int main(void){
 			perror("Accept failed");
 			return 1;
 		}
+        if(setsockopt(client_socket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout))<0){
+            perror("Setting SO_RCVTIMEO failed");
+            close(client_socket);
+            continue;
+        }
+
+        
         result_handle = 0;
         puts("/////////////////////////////////////////////////////////");
 		passeduns=read(client_socket, buffer, 3024);
-		buffer[passeduns]='\0';
+        buffer[passeduns]='\0';
         strcpy(IP_main ,inet_ntoa(client_addr.sin_addr));
-		exit_handler = handle_request(buffer, IP_main, &result_handle, &err);
+        exit_handler = handle_request(buffer, IP_main, &result_handle, &err);
         if(exit_handler == NULL){
-			result_handle =-1000;
-		}else{
+            result_handle =-1000;
+        }else{
             char pwd_request[MAX_LENGTH_PWD];
             sprintf(pwd_request,"%s/%s",now_pwd_dirrectory,"buffer.txt");
             FILE *html_file = fopen(pwd_request,"a");
@@ -2887,9 +3035,9 @@ int main(void){
                                 print_rooms();
                                 //cut this
             puts(" ");
-			write(client_socket,exit_handler,strlen(exit_handler)+1);
-		    free(exit_handler);
-		}
+            write(client_socket,exit_handler,strlen(exit_handler)+1);
+            free(exit_handler);
+        }
 		close(client_socket);
 	}
 	puts("ERROR");
