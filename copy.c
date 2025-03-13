@@ -7,9 +7,13 @@
 #include <locale.h>
 #include <math.h>
 #include <limits.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/time.h>
+
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <windows.h>
+#include <time.h>
+
+#pragma comment(lib, "Ws2_32.lib")
 
 #define strsize(args...) snprintf(NULL, 0, args) + sizeof('\0')
 #define PORT 8000
@@ -2878,6 +2882,28 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 }
 
 int main(void){
+	WSADATA wsaData;
+	SOCKET listenSocket = INVALID_SOCKET, clientSocket = INVALID_SOCKET;
+	struct sockaddr_in serverAddr, clientAddr;
+	int addrLen = sizeof(struct sockaddr_in);
+	char recvBuffer[MAX_BUFFER_SIZE];
+	int bytesReceived, resultHandle = 0;
+	char ipAddressStr[INET_ADDRSTRLEN];
+	char logFilePath[MAX_PATH_LEN];
+
+	WSAStartup(MAKEWORD(2,2), &wsaData);
+
+	listenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if(listenSocket == INVALID_SOCKET){
+		printf("Failed to create listening socket.\n");
+		goto CLEANUP;
+	}
+
+	memset(&serverAddr, 0, sizeof(serverAddr));
+	serverAddr.sin_family = AF_INET;
+	serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	serverAddr.sin_port = htons(PORT);
+	
     return 0;
 }
 
