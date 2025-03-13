@@ -12,7 +12,6 @@
 #include <ws2tcpip.h>
 #include <windows.h>
 #include <time.h>
-
 #pragma comment(lib, "Ws2_32.lib")
 
 #define strsize(args...) snprintf(NULL, 0, args) + sizeof('\0')
@@ -2882,19 +2881,32 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 }
 
 int main(void){
+    if(!CreateDirectoryA("./rooms", NULL) && GerLastError() != ERROR_ALREADY_EXISTS){
+        printf("Failed to create directory 'rooms'.\n");
+        return -1;
+    }
+    html_way_create();
+	setlocale(LC_ALL, "");
 	WSADATA wsaData;
-	SOCKET listenSocket = INVALID_SOCKET, clientSocket = INVALID_SOCKET;
-	struct sockaddr_in serverAddr, clientAddr;
-	int addrLen = sizeof(struct sockaddr_in);
+	SOCKET serverSocket = INVALID_SOCKET, clientSocket = INVALID_SOCKET;
+	struct sockaddrIn serverAddr, clientAddr;
+	int addrLen;
+    addrLen = sizeof(struct sockaddrIn);
+    //////////////////////////////////////////////////////////////////
 	char recvBuffer[MAX_BUFFER_SIZE];
+    char *response;
 	int bytesReceived, resultHandle = 0;
 	char ipAddressStr[INET_ADDRSTRLEN];
 	char logFilePath[MAX_PATH_LEN];
+	getcwd(logFilePath, MAX_LENGTH_PWD);
+    sprintf(logFilePath,"%s/%s",now_pwd_dirrectory,"buffer.txt");
+    ERROR error;
+    int passed=0;
+    size_t passedUns=0;
 
 	WSAStartup(MAKEWORD(2,2), &wsaData);
-
-	listenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	if(listenSocket == INVALID_SOCKET){
+	serverSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if(serverSocket == INVALID_SOCKET){
 		printf("Failed to create listening socket.\n");
 		goto CLEANUP;
 	}
@@ -2903,7 +2915,72 @@ int main(void){
 	serverAddr.sin_family = AF_INET;
 	serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	serverAddr.sin_port = htons(PORT);
-	
+
+    if(bind(serverSocket, (SOCKADDR*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR){
+        printf("Failed to bind the address to the socket.\n");
+        goto CLEANUP;
+    }
+
+    if(listen(serverSocket, SOMAXCONN) == SOCKET_ERROR){
+        printf("Faile to start listening for incoming connections.\n");
+        goto CLEANUP;
+    }
+
+    printf("Server is running on port %d ...\n", PORT);
+    insert_account("admin", "admin", "Dimontys","192.168.3.100");
+    while(resultHandle!=-1000){
+        clientSocket = accept(serverSocket, (SOCKADDR*)&clientAddr, &addrLen);
+        if(clientSocket == INVALID_SOCKET){
+            printf("Failed to accept a connection.\n");
+            goto CLEANUP;
+        }
+        inet_ntop(AF_INET, &(clientAddr.sin_addr), ipAddressStr, INET_ADDRSTRLEN);
+        bytesReceived = recv(clientSocket, recvBuffer, MAX_BUFFER_SIZE, 0);
+        if(bytesReceived<=0){
+            printf("Error receiving data or connection closed by client.\n");
+            closesocket(clientSocket);
+            continue;
+        }
+        resultHandle = 0;
+        response = handle_request(recvBuffer, ipAddressStr, &resultHandle, &error);
+        if(response == NULL){
+            resultHandle = -1000;
+        }else{
+            FILE *html_file = fopen(logFilePath ,"a");
+            if(html_file==NULL){
+                resultHandle =-100;
+                response = error_handler(recvBuffer, "Not open buffer.txt", 
+                        resultHandle, &err, &passed);
+                if(response == NULL){
+                    resultHandle = -1000;
+                    return resultHandle;
+                }
+                if(passed < 0){
+                    resultHandle = -(resultHandle);
+                }
+                return resultHandle;
+            }
+            fprintf(html_file,"\n\nAnswer = %d :\n%s",resultHandle, 
+                    responseFile);
+            fclose(html_file);
+                                //cut this
+                                print_users();
+                                print_rooms();
+                                //cut this
+            puts(" ");
+            write(clientSocket,responseFile,strlen(responseFile)+1);
+            free(responseFile);
+        }
+		closesocket(clientSocket);
+	}
+	puts("ERROR");
+	printf("Explanation = %s\nIn file err = %s\nResult = %d",
+		error.function, error.a?"YES":"NO",error.result);
+CLEANUP:
+    if(listenSocket != INVALID_SOCKET){
+        closesocket(server_socket);
+    }
+    WSACleanup();
     return 0;
 }
 

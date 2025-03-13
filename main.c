@@ -7,6 +7,7 @@
 #include <locale.h>
 #include <math.h>
 #include <limits.h>
+
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -14,6 +15,8 @@
 
 #define strsize(args...) snprintf(NULL, 0, args) + sizeof('\0')
 #define PORT 8000
+#define MAX_BUFFER_SIZE 4096
+#define MAX_PATH_LEN 240
 #define MAX_IPs 8
 #define MAX_REQUEST 8
 #define MAX_COUNT_HISTORY 20
@@ -2879,101 +2882,107 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 }
 
 int main(void){
-	getcwd(now_pwd_dirrectory, MAX_LENGTH_PWD);
+
     if(stat("./rooms", &st) == -1){
         mkdir("./rooms", 0777);
     }
     html_way_create();
 	setlocale(LC_ALL, "");
-	int server_socket, client_socket;
-	struct sockaddr_in server_addr, client_addr;
-	socklen_t addr_len = sizeof(client_addr);
-	server_socket = socket(AF_INET, SOCK_STREAM, 0);
-	if (server_socket==-1){
+
+	int serverSocket, clientSocket;
+	struct sockaddr_in serverAddr, clientAddr;
+	socklen_t addrLen;
+    addrLen = sizeof(struct sockaddr_in);
+	char recvBuffer[MAX_BUFFER_SIZE];
+    char *response;
+    char *responseFile;
+	int bytesReceived, resultHandle = 0;
+	char ipAddressStr[INET_ADDRSTRLEN];
+	char logFilePath[MAX_PATH_LEN];
+	getcwd(logFilePath, MAX_LENGTH_PWD);
+    sprintf(logFilePath,"%s/%s",now_pwd_dirrectory,"buffer.txt");
+    Error error;
+    int passed=0;
+    size_t passedUns=0;
+
+	serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+	if (serverSocket==-1){
 		perror("Socket creation failed");
-		return 1;
+        goto CLEANUP;
 	}
-	server_addr.sin_family = AF_INET;
-	server_addr.sin_port = INADDR_ANY;
-	server_addr.sin_port = htons(PORT);
-	if (bind(server_socket, (struct sockaddr *)&server_addr, sizeof(server_addr))<0){
+
+	memset(&serverAddr, 0, sizeof(serverAddr));
+	serverAddr.sin_family = AF_INET;
+	serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	serverAddr.sin_port = htons(PORT);
+
+	if (bind(serverSocket, (struct sockaddr *)&serverAddr, sizeof(serverAddr))<0){
 		perror("Bind failed");
-		return 1;
+        goto CLEANUP;
 	}
-	if (listen(server_socket, 3)<0){
+
+	if (listen(serverSocket, 3)<0){
 		perror("Listen failed");
-		return 1;
+        goto CLEANUP;
 	}
+
 	printf("Server running on port %d...\n",PORT);
     insert_account("admin", "admin", "Dimontys","192.168.3.100");
-	char IP_main[10];
-	char buffer[3024];
-    size_t passeduns=0;
-    int passed = 0;
-	int result_handle=0;
-	char *exit_handler;
-    char *response;
-	Error err;
-    struct timeval timeout;
-    timeout.tv_sec = 1;
-    timeout.tv_usec = 0;
-
-	while(result_handle!=-1000){
-		client_socket = accept(server_socket, (struct sockaddr*)&client_addr,
-			   	&addr_len);
-		if (client_socket<0){
+	while(resultHandle!=-1000){
+		clientSocket = accept(serverSocket, (struct sockaddr*)&clientAddr, &addrLen);
+		if (clientSocket<0){
 			perror("Accept failed");
-			return 1;
+            goto CLEANUP;
 		}
-        if(setsockopt(client_socket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout))<0){
-            perror("Setting SO_RCVTIMEO failed");
-            close(client_socket);
+		passedUns=read(clientSocket, recvBuffer, MAX_BUFFER_SIZE);
+        if(passedUns==0){
+            close(clientSocket);
             continue;
         }
-
-        
-        result_handle = 0;
-        puts("/////////////////////////////////////////////////////////");
-		passeduns=read(client_socket, buffer, 3024);
-        buffer[passeduns]='\0';
-        strcpy(IP_main ,inet_ntoa(client_addr.sin_addr));
-        exit_handler = handle_request(buffer, IP_main, &result_handle, &err);
-        if(exit_handler == NULL){
-            result_handle =-1000;
+        recvBuffer[passedUns]='\0';
+        strcpy(ipAddressStr ,inet_ntoa(clientAddr.sin_addr));
+        resultHandle = 0;
+        response = handle_request(recvBuffer, ipAddressStr, &resultHandle, &error);
+        if(response == NULL){
+            resultHandle = -1000;
         }else{
-            char pwd_request[MAX_LENGTH_PWD];
-            sprintf(pwd_request,"%s/%s",now_pwd_dirrectory,"buffer.txt");
-            FILE *html_file = fopen(pwd_request,"a");
+            FILE *html_file = fopen(logFilePath ,"a");
             if(html_file==NULL){
-                result_handle =-100;
-                response = error_handler(buffer, "Not open buffer.txt", 
-                        result_handle, &err, &passed);
+                resultHandle =-100;
+                response = error_handler(recvBuffer, "Not open buffer.txt", 
+                        resultHandle, &error, &passed);
                 if(response == NULL){
-                    result_handle = -1000;
-                    return result_handle;
+                    resultHandle = -1000;
+                    return resultHandle;
                 }
                 if(passed < 0){
-                    result_handle = -(result_handle);
+                    resultHandle = -(resultHandle);
                 }
-                return result_handle;
+                return resultHandle;
             }
-            fprintf(html_file,"\n\nAnswer = %d :\n%s",result_handle, 
-                    exit_handler);
+            fprintf(html_file,"\n\nAnswer = %d :\n%s",resultHandle, 
+                    responseFile);
             fclose(html_file);
                                 //cut this
                                 print_users();
                                 print_rooms();
                                 //cut this
             puts(" ");
-            write(client_socket,exit_handler,strlen(exit_handler)+1);
-            free(exit_handler);
+            write(clientSocket,responseFile,strlen(responseFile)+1);
+            free(responseFile);
         }
-		close(client_socket);
+		close(clientSocket);
 	}
 	puts("ERROR");
 	printf("Explanation = %s\nIn file err = %s\nResult = %d",
-		err.function, err.a?"YES":"NO",err.result);
-	close(server_socket);
+		error.function, error.a?"YES":"NO",error.result);
+CLEANUP:
+    if(serverSocket >0){
+	    close(serverSocket);
+    }
+    if(clientSocket >0){
+        close(clientSocket);
+    }
     return 0;
 }
 
