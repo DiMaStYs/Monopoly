@@ -15,6 +15,8 @@
 #pragma comment(lib, "Ws2_32.lib")
 
 #define strsize(args...) snprintf(NULL, 0, args) + sizeof('\0')
+#define MAX_BUFFER_SIZE 4096
+#define MAX_PATH_LEN 200
 #define PORT 8000
 #define MAX_IPs 8
 #define MAX_REQUEST 8
@@ -2881,7 +2883,7 @@ char * handle_request(char *buffer, char *IP, int *request_return, Error *err){
 }
 
 int main(void){
-    if(!CreateDirectoryA("./rooms", NULL) && GerLastError() != ERROR_ALREADY_EXISTS){
+    if(!CreateDirectoryA("./rooms", NULL) && GetLastError() != ERROR_ALREADY_EXISTS){
         printf("Failed to create directory 'rooms'.\n");
         return -1;
     }
@@ -2889,18 +2891,19 @@ int main(void){
 	setlocale(LC_ALL, "");
 	WSADATA wsaData;
 	SOCKET serverSocket = INVALID_SOCKET, clientSocket = INVALID_SOCKET;
-	struct sockaddrIn serverAddr, clientAddr;
+	struct sockaddr_in serverAddr, clientAddr;
 	int addrLen;
-    addrLen = sizeof(struct sockaddrIn);
+    addrLen = sizeof(struct sockaddr_in);
     //////////////////////////////////////////////////////////////////
 	char recvBuffer[MAX_BUFFER_SIZE];
     char *response;
+	char *responseFile;
 	int bytesReceived, resultHandle = 0;
 	char ipAddressStr[INET_ADDRSTRLEN];
 	char logFilePath[MAX_PATH_LEN];
 	getcwd(logFilePath, MAX_LENGTH_PWD);
     sprintf(logFilePath,"%s/%s",now_pwd_dirrectory,"buffer.txt");
-    ERROR error;
+    Error error;
     int passed=0;
     size_t passedUns=0;
 
@@ -2950,7 +2953,7 @@ int main(void){
             if(html_file==NULL){
                 resultHandle =-100;
                 response = error_handler(recvBuffer, "Not open buffer.txt", 
-                        resultHandle, &err, &passed);
+                        resultHandle, &error, &passed);
                 if(response == NULL){
                     resultHandle = -1000;
                     return resultHandle;
@@ -2977,8 +2980,8 @@ int main(void){
 	printf("Explanation = %s\nIn file err = %s\nResult = %d",
 		error.function, error.a?"YES":"NO",error.result);
 CLEANUP:
-    if(listenSocket != INVALID_SOCKET){
-        closesocket(server_socket);
+    if(serverSocket != INVALID_SOCKET){
+        closesocket(serverSocket);
     }
     WSACleanup();
     return 0;
