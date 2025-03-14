@@ -286,7 +286,7 @@ size_t correct_size(char * path_file){
 		perror("fopen");
 		return 0;
 	}
-	// Проверяем, что файл существует и доступен для чтения
+	// ГЏГ°Г®ГўГҐГ°ГїГҐГ¬, Г·ГІГ® ГґГ Г©Г« Г±ГіГ№ГҐГ±ГІГўГіГҐГІ ГЁ Г¤Г®Г±ГІГіГЇГҐГ­ Г¤Г«Гї Г·ГІГҐГ­ГЁГї
 	if (access(path_file, R_OK) != 0) {
 		fclose(html_file);
 		return 0;
@@ -305,7 +305,7 @@ int send_html(char *path_file, char * result){
 		perror("fopen");
 		return -1;
 	}
-	// Проверяем, что файл существует и доступен для чтения
+	// ГЏГ°Г®ГўГҐГ°ГїГҐГ¬, Г·ГІГ® ГґГ Г©Г« Г±ГіГ№ГҐГ±ГІГўГіГҐГІ ГЁ Г¤Г®Г±ГІГіГЇГҐГ­ Г¤Г«Гї Г·ГІГҐГ­ГЁГї
 	if (access(path_file, R_OK) != 0) {
 		fclose(html_file);
 		return -2;
@@ -318,7 +318,7 @@ int send_html(char *path_file, char * result){
 		fclose(html_file);
 		return -3;
 	}
-	// Добавляем нуль-терминатор в конец строки
+	// Г„Г®ГЎГ ГўГ«ГїГҐГ¬ Г­ГіГ«Гј-ГІГҐГ°Г¬ГЁГ­Г ГІГ®Г° Гў ГЄГ®Г­ГҐГ¶ Г±ГІГ°Г®ГЄГЁ
 	result[file_size] = '\0';
 
 	fclose(html_file);
@@ -2895,7 +2895,6 @@ int main(void){
     addrLen = sizeof(struct sockaddr_in);
 	char recvBuffer[MAX_BUFFER_SIZE];
     char *response;
-    char *responseFile;
 	int bytesReceived, resultHandle = 0;
 	char ipAddressStr[INET_ADDRSTRLEN];
 	char logFilePath[MAX_PATH_LEN];
@@ -2958,18 +2957,18 @@ int main(void){
                 if(passed < 0){
                     resultHandle = -(resultHandle);
                 }
-                return resultHandle;
-            }
-            fprintf(html_file,"\n\nAnswer = %d :\n%s",resultHandle, 
-                    responseFile);
-            fclose(html_file);
-                                //cut this
-                                print_users();
-                                print_rooms();
-                                //cut this
-            puts(" ");
-            write(clientSocket,responseFile,strlen(responseFile)+1);
-            free(responseFile);
+            }else{
+	            fprintf(html_file,"\n\nAnswer = %d :\n%s",resultHandle, 
+	                    response);
+	            fclose(html_file);
+	    }
+	                                //cut this
+	                                print_users();
+	                                print_rooms();
+	                                //cut this
+	            puts(" ");
+	    write(clientSocket,response,strlen(response)+1);
+            free(response);
         }
 		close(clientSocket);
 	}
